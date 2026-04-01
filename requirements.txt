@@ -1,3 +1,17 @@
+# Python 依赖
+
+## 基础依赖
 pandas>=2.0.0
 openpyxl>=3.1.0
-robotframework>=6.0.0
+
+## Robot Framework
+robotframework>=3.2.2,<4.0.0
+
+## 自定义库（可选）
+# robotframework-jljltestlibrary 是项目自定义库，包含特定业务关键字
+# 安装方式：
+#   pip install robotframework-jljltestlibrary==0.0.1.dev50+ge870d58 -U -i https://nexus.jlpay.com/repository/local-pypi/simple --trusted-host nexus.jlpay.com
+# 注意：
+#   - 具体版本号和镜像地址需要根据实际情况确认
+#   - 建议先联系运维获取正确的安装信息
+# robotframework-jljltestlibrary==0.0.1.dev50+ge870d58

@@ -42,8 +42,8 @@ check_python_version() {
     local major=$(echo $python_version | cut -d. -f1)
     local minor=$(echo $python_version | cut -d. -f2)
 
-    if [ "$major" -lt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -lt 10 ]); then
-        log_error "Python 版本需要 3.10+，当前版本: $python_version"
+    if [ "$major" -lt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -lt 7 ]); then
+        log_error "Python 版本需要 3.7.16+，当前版本: $python_version"
         exit 1
     fi
 
@@ -54,7 +54,7 @@ check_python_version() {
 install_python_deps() {
     log_info "安装 Python 依赖..."
 
-    local deps=("pandas" "openpyxl" "robotframework")
+    local deps=("pandas" "openpyxl")
 
     for dep in "${deps[@]}"; do
         if pip3 show "$dep" &> /dev/null; then
@@ -68,7 +68,60 @@ install_python_deps() {
         fi
     done
 
-    log_info "Python 依赖安装完成"
+    log_info "基础依赖安装完成"
+}
+
+# 安装 Robot Framework
+install_robotframework() {
+    log_info "检查 Robot Framework..."
+
+    local rf_version="3.2.2"
+    if pip3 show "robotframework" &> /dev/null; then
+        log_info "robotframework 已安装"
+    else
+        log_info "安装 robotframework>=3.2.2,<4.0.0..."
+        pip3 install "robotframework>=3.2.2,<4.0.0" || {
+            log_error "安装 robotframework 失败"
+            exit 1
+        }
+    fi
+
+    log_info "Robot Framework 安装完成: $rf_version"
+}
+
+# 安装自定义库
+install_custom_library() {
+    log_info "安装自定义库..."
+    log_warn "自定义库需要从私有 PyPI 安装"
+    log.info "请确认以下信息："
+    log_warn "  - 镜像地址: https://nexus.jlpay.com/repository/local-pypi/simple"
+    log_warn "  - 信任主机: nexus.jlpay.com"
+    log_warn "  - 版本号: 需要确认（当前为 0.0.1.dev50+ge870d58）"
+    log.warn ""
+    log_warn "安装命令（请根据实际情况确认版本号）："
+    log_warn "  pip install robotframework-jljltestlibrary==0.0.1.dev50+ge870d58 -U -i https://nexus.jlpay.com/repository/local-pypi/simple --trusted-host nexus.jlpay.com"
+
+    # 询问用户是否安装
+    read -p "是否继续安装自定义库？(y/n) " -n 1 -r
+    echo
+
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        log_info "跳过自定义库安装"
+        return
+    fi
+
+    # 安装自定义库
+    pip3 install robotframework-jljltestlibrary==0.0.1.dev50+ge870d58 -U -i https://nexus.jlpay.com/repository/local-pypi/simple --trusted-host nexus.jlpay.com || {
+        log_error "自定义库安装失败"
+        log_warn "请检查："
+        log_warn "  1. 网络连接和镜像地址"
+        log_warn "  2. 版本号是否正确"
+        log_warn "  3. Python 版本是否兼容"
+        log_warn "  4. 是否有权限访问私有 PyPI"
+        return 1
+    }
+
+    log_info "自定义库安装成功"
 }
 
 # 克隆插件仓库
