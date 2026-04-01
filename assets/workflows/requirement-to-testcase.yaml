@@ -1,0 +1,94 @@
+# 需求到测试用例工作流
+
+> 从需求文档自动生成测试用例的完整流程
+
+## 工作流定义
+
+```yaml
+name: requirement-to-testcase
+description: 从需求文档生成测试用例
+version: 1.0
+
+inputs:
+  - name: requirement_url
+    type: string
+    description: TAPD需求URL或文档路径
+  - name: project_id
+    type: string
+    description: 项目ID
+
+outputs:
+  - name: test_cases
+    type: array
+    description: 生成的测试用例列表
+
+steps:
+  - id: fetch_requirement
+    action: query_tapd_stories
+    params:
+      story_id: ${requirement_url}
+    
+  - id: search_similar
+    action: query_knowledge
+    params:
+      query: 类似需求的测试用例
+      top_k: 5
+      
+  - id: analyze_requirement
+    action: llm_analyze
+    params:
+      prompt: |
+        分析以下需求，提取测试点：
+        ${fetch_requirement.result}
+        
+        参考历史用例：
+        ${search_similar.result}
+        
+        输出格式：
+        1. 功能测试点
+        2. 接口测试点
+        3. 边界测试点
+        4. 风险评估
+        
+  - id: generate_cases
+    action: generate_test_case
+    params:
+      test_points: ${analyze_requirement.test_points}
+      template: standard
+      
+  - id: create_cases
+    action: create_test_case
+    params:
+      cases: ${generate_cases.cases}
+      project_id: ${project_id}
+      
+  - id: update_knowledge
+    action: vectorize_content
+    params:
+      content: ${generate_cases.cases}
+      metadata:
+        type: test_case
+        source: ${requirement_url}
+```
+
+## 执行条件
+
+- 输入: 有效的 TAPD 需求 URL
+- 前置: 需求状态为"待测试"
+- 后置: 测试用例创建成功
+
+## 质量检查
+
+- [ ] 测试点覆盖率 >= 80%
+- [ ] 用例格式符合规范
+- [ ] 优先级分配合理
+- [ ] 向量化完成
+
+## 回滚方案
+
+1. 删除创建的测试用例
+2. 清除向量化数据
+
+---
+
+_自动化从需求到测试用例的转换_

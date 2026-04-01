@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /A \"D:\\\\workspace\\\\python\\\\rf_plugin_for_claude\")",
+      "Bash(xargs ls:*)",
+      "Bash(dir /s /b \"D:\\\\workspace\\\\python\\\\rf_plugin_for_claude\")",
+      "Bash(findstr /E \".md .py .mdc .json .yaml\")",
+      "Bash(mkdir:*)",
+      "Edit(*)",
+      "ReadFile(*)",
+      "ListFiles(*)",
+      "SearchCode(*)"
+    ]
+  }
+}
