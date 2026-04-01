@@ -3,7 +3,7 @@
     "description": "基于 TAPD 需求的 RF 测试工作流插件，联动 TAPD MCP。",
     "version": "1.0.0",
     "author": {
-        "name": "your-name"
+        "name": "RF Testing Plugin"
     },
     "license": "MIT",
     "keywords": [
