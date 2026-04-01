@@ -65,7 +65,7 @@ Append To List    ${list}    new_item
 ${combined}    Combine Lists    ${list1}    ${list2}
 
 # 判断列表包含
-List Should Contain Item    ${list}    ${item}
+${exists}    List Should Contain Item    ${list}    ${item}
 
 # 移除元素
 Remove From List    ${list}    ${item}
@@ -145,7 +145,7 @@ ${value}    Get From Dictionary    ${dict}    key
 Set To Dictionary    ${dict}    key    value
 
 # 判断键存在
-Dictionary Should Contain Key    ${dict}    key
+${has_key}    Dictionary Should Contain Key    ${dict}    key
 
 # 获取所有键
 @{keys}    Get Dictionary Keys    ${dict}
@@ -194,7 +194,7 @@ ${random}    Evaluate    random.randint(1, 100)    modules=random
 
 ---
 
-## 8. 库实例获取
+##** 8. 库实例获取
 
 ```robotframework
 # 获取已导入库的实例，保持状态一致性
@@ -321,6 +321,15 @@ Run Keyword And Ignore Error    可能失败的关键字
 
 # 期望关键字失败
 Run Keyword And Expect Error    应该失败的关键字
+
+# 忽略错误继续执行
+Continue For Loop If    ${condition}
+
+# 退出循环
+Exit For Loop
+
+# 跳出当前迭代
+Continue For Loop
 ```
 
 ---
@@ -371,6 +380,27 @@ Set Global Variable    ${var}    value
 3. **忽略错误而非处理**：使用 `Run Keyword And Ignore Error` 时要有日志记录
 4. **不使用断言**：所有验证步骤都应该有断言
 
+## 15. 文件操作
+
+```robotframework
+# 文件是否存在
+${exists}    File Should Exist    ${file_path}
+
+# 创建目录
+Create Directory    ${dir_path}
+
+# 删除文件/目录
+Remove File    ${file_path}
+Remove Directory    ${dir_path}
+
+# 读取文件内容
+${content}    Get File    ${file_path}
+
+# 写入文件内容
+${encoding}    Get File Encoding    ${file_path}
+Binary File Should Not Be Empty    ${file_path}
+Log File    ${file_path}
+```
 ---
 
 **文档版本：** 1.0
