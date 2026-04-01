@@ -87,7 +87,7 @@
 
 ### 📄 已写入文件
 
-**文件**: `.agent/generated/rf-test-workflow/{date}/stage_X_report.md`
+**文件**: `.agent/generated/rf-testing-plugin/{date}/stage_X_report.md`
 
 **包含内容**:
 - ✓ 需求内容已解析

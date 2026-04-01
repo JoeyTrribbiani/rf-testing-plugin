@@ -10,7 +10,7 @@
 
 ### 1.1 现状
 
-现有项目 `rf_plugin_for_claude` 包含：
+现有项目 `rf-testing-plugin` 包含：
 - 详细的 Robot Framework 编写规范（`robotframeworkruls.mdc`）
 - RF 用例转 TAPD Excel 的转换脚本
 - 多个 testing 相关技能文件
@@ -136,7 +136,7 @@ rf-testing-plugin/
   },
   "plugins": [
     {
-      "name": "rf-test-workflow",
+      "name": "rf-testing-plugin",
       "source": "./00-JL-Skills",
       "description": "根据 TAPD 需求自动生成 RF 用例并转换为 TAPD 格式，对标开发工作流的测试闭环。",
       "version": "1.0.0",

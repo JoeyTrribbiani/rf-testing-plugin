@@ -2,12 +2,42 @@
 
 ## 快速安装
 
-### 方法1：克隆安装
+### 方法1：一键安装（推荐）
+
+**Linux / macOS:**
+
+```bash
+# 下载并执行安装脚本
+curl -fsSL https://raw.githubusercontent.com/JoeyTrribbiani/rf-testing-plugin/master/install.sh | bash
+
+# 或手动下载后执行
+git clone https://github.com/JoeyTrribbiani/rf-testing-plugin.git
+cd rf-testing-plugin
+chmod +x install.sh
+./install.sh
+```
+
+**Windows:**
+
+```cmd
+# 下载并执行安装脚本
+git clone https://github.com/JoeyTrribbiani/rf-testing-plugin.git
+cd rf-testing-plugin
+install.bat
+```
+
+安装脚本将自动完成：
+- ✓ Python 依赖安装（pandas, openpyxl, robotframework）
+- ✓ 克隆插件仓库到 `~/.claude/plugins/rf-testing-plugin`
+- ✓ 配置 Claude Skills 到 settings.json
+- ✓ 验证安装
+
+### 方法2：手动安装
 
 ```bash
 # 克隆仓库
-git clone <repository-url> rf_plugin_for_claude
-cd rf_plugin_for_claude
+git clone <repository-url> rf-testing-plugin
+cd rf-testing-plugin
 
 # 安装 Python 依赖
 pip install -r requirements.txt
@@ -82,7 +112,7 @@ python 03-scripts/robot2tapd.py --help
 安装后的目录结构：
 
 ```
-rf_plugin_for_claude/
+rf-testing-plugin/
 ├── 00-JL-Skills/          # JL 公共库（无需额外配置）
 ├── 01-RF-Skills/          # RF 技能（已通过 skills.json 配置）
 ├── 02-workflows/           # 工作流定义

@@ -126,7 +126,7 @@ git commit -m "feat: 创建 RF 测试插件目录结构"
   },
   "plugins": [
     {
-      "name": "rf-test-workflow",
+      "name": "rf-testing-plugin",
       "source": "./00-JL-Skills",
       "description": "根据 TAPD 需求自动生成 RF 用例并转换为 TAPD 格式，对标开发工作流的测试闭环。",
       "version": "1.0.0",
