@@ -1,0 +1,28 @@
+{
+  "name": "rf-testing-plugin",
+  "owner": {
+    "name": "your-name"
+  },
+  "metadata": {
+    "description": "Robot Framework 测试用例生成与转换插件，对标开发工作流提供测试工程师视角能力。",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "rf-test-workflow",
+      "source": "./00-JL-Skills",
+      "description": "根据 TAPD 需求自动生成 RF 用例并转换为 TAPD 格式，对标开发工作流的测试闭环。",
+      "version": "1.0.0",
+      "author": {
+        "name": "your-name"
+      },
+      "category": "testing",
+      "tags": [
+        "robotframework",
+        "tapd",
+        "test-automation",
+        "workflow"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+    "name": "rf-test-workflow",
+    "description": "基于 TAPD 需求的 RF 测试工作流插件，联动 TAPD MCP。",
+    "version": "1.0.0",
+    "author": {
+        "name": "your-name"
+    },
+    "license": "MIT",
+    "keywords": [
+        "claude-code",
+        "robotframework",
+        "tapd",
+        "test-automation"
+    ]
+}
