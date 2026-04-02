@@ -9,8 +9,7 @@ import os
 import sys
 import subprocess
 import zipfile
-import shutil
-from typing import Optional, List, Tuple
+from typing import List, Tuple
 
 
 class JLTestLibraryInstallError(Exception):
