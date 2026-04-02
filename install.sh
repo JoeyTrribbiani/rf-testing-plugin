@@ -36,92 +36,158 @@ check_command() {
     fi
 }
 
-# 检查 Python 版本
-check_python_version() {
-    local python_version=$(python3 --version 2>&1 | awk '{print $2}')
-    local major=$(echo $python_version | cut -d. -f1)
-    local minor=$(echo $python_version | cut -d. -f2)
+# 检查 Python 环境（更新）
+check_python_environment() {
+    log_info "检测 Python 环境..."
 
-    if [ "$major" -lt 3 ] || ([ "$major" -eq 3 ] && [ "$minor" -lt 7 ]); then
-        log_error "Python 版本需要 3.7.16+，当前版本: $python_version"
-        exit 1
+    # 使用 Python 检测模块
+    local detection_output
+    detection_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --format json 2>/dev/null)
+
+    if [ $? -ne 0 ]; then
+        log_error "Python 环境检测失败"
+        return 1
     fi
 
-    log_info "Python 版本检查通过: $python_version"
+    # 显示检测结果
+    echo ""
+    python3 "$PLUGIN_DIR/03-scripts/python_detector.py"
+    echo ""
+
+    # 获取用户选择
+    read -p "请选择目标 Python 环境 [默认=1]: " choice
+    choice=${choice:-1}
+
+    # 解析选择结果
+    SELECTED_ENV=$(echo "$detection_output" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if len(data) >= $choice:
+    print(json.dumps(data[$choice - 1]))
+else:
+    print('', end='')
+")
+
+    if [ -z "$SELECTED_ENV" ]; then
+        log_error "无效的选择"
+        return 1
+    fi
+
+    # 提取 Python 路径
+    SELECTED_PYTHON_PATH=$(echo "$SELECTED_ENV" | python3 -c "import json,sys; print(json.load(sys.stdin)['python_path'])")
+    SELECTED_PYTHON_VERSION=$(echo "$SELECTED_ENV" | python3 -c "import json,sys; print(json.load(sys.stdin)['version'])")
+
+    log_info "已选择: Python $SELECTED_PYTHON_VERSION"
+    log_info "路径: $SELECTED_PYTHON_PATH"
+    echo ""
+
+    # 设置 Python 和 pip 命令
+    PYTHON_CMD="$SELECTED_PYTHON_PATH"
+    PIP_CMD=$(python3 -c "import os; print(os.path.join(os.path.dirname('$SELECTED_PYTHON_PATH'), 'pip'))" | sed 's/python/pip/g')
 }
 
-# 安装 Python 依赖
+# 安装 Python 依赖（更新）
 install_python_deps() {
     log_info "安装 Python 依赖..."
 
     local deps=("pandas" "openpyxl")
 
     for dep in "${deps[@]}"; do
-        if pip3 show "$dep" &> /dev/null; then
+        if "$PIP_CMD" show "$dep" &> /dev/null; then
             log_info "$dep 已安装"
         else
             log_info "安装 $dep..."
-            pip3 install "$dep" || {
+            "$PIP_CMD" install "$dep" || {
                 log_error "安装 $dep 失败"
                 exit 1
             }
         fi
     done
 
-    log_info "基础依赖安装完成"
-}
-
-# 安装 Robot Framework
-install_robotframework() {
-    log_info "检查 Robot Framework..."
-
-    local rf_version="3.2.2"
-    if pip3 show "robotframework" &> /dev/null; then
+    # 安装 Robot Framework
+    if "$PIP_CMD" show "robotframework" &> /dev/null; then
         log_info "robotframework 已安装"
     else
-        log_info "安装 robotframework>=3.2.2,<4.0.0..."
-        pip3 install "robotframework>=3.2.2,<4.0.0" || {
+        log_info "安装 robotframework..."
+        "$PIP_CMD" install "robotframework>=3.2.2,<4.0.0" || {
             log_error "安装 robotframework 失败"
             exit 1
         }
     fi
 
-    log_info "Robot Framework 安装完成: $rf_version"
+    log_info "Python 依赖安装完成"
 }
 
-# 安装自定义库
-install_custom_library() {
-    log_info "安装自定义库..."
-    log_warn "自定义库需要从私有 PyPI 安装"
-    log.info "请确认以下信息："
-    log_warn "  - 镜像地址: https://nexus.jlpay.com/repository/local-pypi/simple"
-    log_warn "  - 信任主机: nexus.jlpay.com"
-    log_warn "  - 版本号: 需要确认（当前为 0.0.1.dev50+ge870d58）"
-    log.warn ""
-    log_warn "安装命令（请根据实际情况确认版本号）："
-    log_warn "  pip install robotframework-jljltestlibrary==0.0.1.dev50+ge870d58 -U -i https://nexus.jlpay.com/repository/local-pypi/simple --trusted-host nexus.jlpay.com"
+# 安装 JLTestLibrary（更新）
+install_jltestlibrary() {
+    log_info "安装 JLTestLibrary..."
 
-    # 询问用户是否安装
-    read -p "是否继续安装自定义库？(y/n) " -n 1 -r
-    echo
+    local jl_library="$PLUGIN_DIR/03-scripts/JLTestLibrary.zip"
 
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_info "跳过自定义库安装"
+    if [ ! -f "$jl_library" ]; then
+        log_warn "JLTestLibrary.zip 不存在，跳过安装"
         return
     fi
 
-    # 安装自定义库
-    pip3 install robotframework-jljltestlibrary==0.0.1.dev50+ge870d58 -U -i https://nexus.jlpay.com/repository/local-pypi/simple --trusted-host nexus.jlpay.com || {
-        log_error "自定义库安装失败"
-        log_warn "请检查："
-        log_warn "  1. 网络连接和镜像地址"
-        log_warn "  2. 版本号是否正确"
-        log_warn "  3. Python 版本是否兼容"
-        log_warn "  4. 是否有权限访问私有 PyPI"
-        return 1
+    # 检测 site-packages 目录
+    log_info "检测 site-packages 目录..."
+
+    # 获取 site-packages 列表
+    local sp_output
+    sp_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --format json 2>/dev/null)
+
+    if [ $? -ne 0 ]; then
+        log_warn "无法自动检测 site-packages 目录，请手动安装"
+        log_info "手动安装命令："
+        log_info "  unzip $jl_library -d \$HOME/Library/Python/3.7/site-packages/"
+        return
+    fi
+
+    # 显示 site-packages 选项
+    echo ""
+    python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages 2>/dev/null | tail -n +2
+    echo ""
+
+    # 获取用户选择
+    read -p "请选择目标目录 [默认=1]: " sp_choice
+    sp_choice=${sp_choice:-1}
+
+    # 解析选择的路径
+    local target_dir
+    target_dir=$(echo "$sp_output" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+paths = data.get('site_packages', [])
+if len(paths) >= $sp_choice:
+    print(paths[$sp_choice - 1])
+")
+
+    if [ -z "$target_dir" ]; then
+        log_warn "无效的选择，跳过安装"
+        return
+    fi
+
+    # 检查是否已安装
+    local jl_path="$target_dir/JLTestLibrary"
+    if [ -d "$jl_path" ]; then
+        log_warn "JLTestLibrary 已存在于: $jl_path"
+        return
+    fi
+
+    # 安装
+    log_info "解压 JLTestLibrary 到: $target_dir"
+    unzip -q "$jl_library" -d "$target_dir" || {
+        log_error "解压失败，请检查权限"
+        return
     }
 
-    log_info "自定义库安装成功"
+    # 验证
+    "$PYTHON_CMD" -c "import JLTestLibrary" 2>/dev/null || {
+        log_error "JLTestLibrary 安装验证失败"
+        return
+    }
+
+    log_info "JLTestLibrary 安装成功"
 }
 
 # 克隆插件仓库
@@ -149,90 +215,157 @@ clone_plugin() {
     log_info "插件克隆完成: $PLUGIN_DIR"
 }
 
-# 配置 Claude Skills
-configure_skills() {
-    log_info "配置 Claude Skills..."
+# 配置插件（已弃用，使用 marketplace）
+configure_plugin() {
+    log_info "提示：新版本推荐通过 marketplace 安装插件"
+    log_info "在 Claude Code 中执行："
+    log_info "  /plugin marketplace add ."
+    log_info "  /plugin install rf-testing"
+}
 
-    local settings_file="$HOME/.claude/settings.json"
-    local temp_file=$(mktemp)
+# 一键配置环境变量和 MCP
+configure_env_and_mcp() {
+    echo ""
+    echo "========================================"
+    echo "  配置环境变量和 MCP 服务器"
+    echo "========================================"
+    echo ""
 
-    # 技能配置
-    local skill_config='{
-        "name": "rf-test",
-        "path": "'"$PLUGIN_DIR"'/01-RF-Skills/skills/test/SKILL.md"
-    },
-    {
-        "name": "rf-standards-check",
-        "path": "'"$PLUGIN_DIR"'/01-RF-Skills/skills/rf-standards-check/SKILL.md"
-    },
-    {
-        "name": "rf-tapd-conversion",
-        "path": "'"$PLUGIN_DIR"'/01-RF-Skills/skills/tapd-conversion/SKILL.md"
-    }'
-
-    # 处理 settings.json
-    if [ -f "$settings_file" ]; then
-        # 检查是否已有 skills 配置
-        if grep -q '"skills"' "$settings_file"; then
-            log_warn "settings.json 中已有 skills 配置"
-            log_warn "请手动添加以下技能配置到 settings.json 的 skills 数组中："
-            echo ""
-            echo "$skill_config"
-            echo ""
-            log_warn "配置后请重启 Claude Code"
-        else
-            # 创建包含 skills 的新配置
-            python3 -c "
-import json
-
-with open('$settings_file', 'r', encoding='utf-8') as f:
-    settings = json.load(f)
-
-settings['skills'] = [
-    {
-        'name': 'rf-test',
-        'path': '$PLUGIN_DIR/01-RF-Skills/skills/test/SKILL.md'
-    },
-    {
-        'name': 'rf-standards-check',
-        'path': '$PLUGIN_DIR/01-RF-Skills/skills/rf-standards-check/SKILL.md'
-    },
-    {
-        'name': 'rf-tapd-conversion',
-        'path': '$PLUGIN_DIR/01-RF-Skills/skills/tapd-conversion/SKILL.md'
-    }
-]
-
-with open('$settings_file', 'w', encoding='utf-8') as f:
-    json.dump(settings, f, ensure_ascii=False, indent=2)
-"
-            log_info "Skills 配置已添加到 settings.json"
-        fi
+    # 检测 Shell
+    if [[ "$SHELL" == */zsh ]]; then
+        SHELL_RC="$HOME/.zshrc"
     else
-        # 创建新的 settings.json
-        cat > "$settings_file" << EOF
+        SHELL_RC="$HOME/.bashrc"
+    fi
+
+    log_info "检测到 Shell 配置文件: $SHELL_RC"
+
+    # 收集 TAPD 配置
+    echo ""
+    echo "[1/4] 配置 TAPD 访问令牌"
+    echo "----------------------------------------"
+    read -p "请输入 TAPD_ACCESS_TOKEN: " TAPD_TOKEN
+
+    if [[ -z "$TAPD_TOKEN" ]]; then
+        log_error "TAPD_ACCESS_TOKEN 不能为空"
+        log_warn "可以稍后手动配置，跳过此步骤"
+        read -p "是否跳过配置？(y/n): " SKIP_CONFIG
+        if [[ $SKIP_CONFIG =~ ^[Yy]$ ]]; then
+            return
+        fi
+    fi
+
+    # 收集 GitLab 配置（可选）
+    echo ""
+    echo "[2/4] 配置 GitLab（可选，按 Enter 跳过）"
+    echo "----------------------------------------"
+    read -p "请输入 GITLAB_API_URL（默认：https://gitlab.jlpay.com/api/v4）: " GITLAB_URL
+    if [[ -z "$GITLAB_URL" ]]; then
+        GITLAB_URL="https://gitlab.jlpay.com/api/v4"
+    fi
+
+    read -p "请输入 GITLAB_PERSONAL_ACCESS_TOKEN（可选）: " GITLAB_TOKEN
+
+    # 写入环境变量到 Shell RC
+    echo ""
+    echo "[3/4] 写入环境变量到 $SHELL_RC..."
+
+    # 备份原文件
+    if [[ -f "$SHELL_RC" ]]; then
+        cp "$SHELL_RC" "$SHELL_RC.rf-plugin-backup"
+    fi
+
+    # 移除旧配置
+    sed -i.bak '/^export TAPD_ACCESS_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
+    sed -i.bak '/^export GITLAB_API_URL=/d' "$SHELL_RC" 2>/dev/null || true
+    sed -i.bak '/^export GITLAB_PERSONAL_ACCESS_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
+
+    # 添加新配置
+    echo "" >> "$SHELL_RC"
+    echo "# RF Testing Plugin 配置" >> "$SHELL_RC"
+    echo "export TAPD_ACCESS_TOKEN=\"$TAPD_TOKEN\"" >> "$SHELL_RC"
+    echo "export GITLAB_API_URL=\"$GITLAB_URL\"" >> "$SHELL_RC"
+    if [[ -n "$GITLAB_TOKEN" ]]; then
+        echo "export GITLAB_PERSONAL_ACCESS_TOKEN=\"$GITLAB_TOKEN\"" >> "$SHELL_RC"
+    fi
+
+    # 创建 MCP 配置
+    echo ""
+    echo "[4/4] 配置 Claude MCP 服务器..."
+
+    CLAUDE_CONFIG_DIR="$HOME/.claude"
+    MCP_FILE="$CLAUDE_CONFIG_DIR/mcp.json"
+
+    # 创建目录
+    mkdir -p "$CLAUDE_CONFIG_DIR"
+
+    # 构建 JSON 配置
+    if [[ -n "$GITLAB_TOKEN" ]]; then
+        cat > "$MCP_FILE" << EOF
 {
-  "skills": [
-    {
-      "name": "rf-test",
-      "path": "$PLUGIN_DIR/01-RF-Skills/skills/test/SKILL.md"
+  "mcpServers": {
+    "tapd": {
+      "command": "uvx",
+      "args": ["mcp-server-tapd"],
+      "env": {
+        "TAPD_ACCESS_TOKEN": "${TAPD_TOKEN}",
+        "TAPD_API_BASE_URL": "https://api.tapd.cn",
+        "TAPD_BASE_URL": "https://www.tapd.cn",
+        "BOT_URL": ""
+      }
     },
-    {
-      "name": "rf-standards-check",
-      "path": "$PLUGIN_DIR/01-RF-Skills/skills/rf-standards-check/SKILL.md"
-    },
-    {
-      "name": "rf-tapd-conversion",
-      "path": "$PLUGIN_DIR/01-RF-Skills/skills/tapd-conversion/SKILL.md"
+    "gitlab": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
+      "env": {
+        "GITLAB_API_URL": "${GITLAB_URL}",
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TOKEN}"
+      }
     }
-  ]
+  }
 }
 EOF
-        log_info "settings.json 已创建"
+    else
+        cat > "$MCP_FILE" << EOF
+{
+  "mcpServers": {
+    "tapd": {
+      "command": "uvx",
+      "args": ["mcp-server-tapd"],
+      "env": {
+        "TAPD_ACCESS_TOKEN": "${TAPD_TOKEN}",
+        "TAPD_API_BASE_URL": "https://api.tapd.cn",
+        "TAPD_BASE_URL": "https://www.tapd.cn",
+        "BOT_URL": ""
+      }
+    }
+  }
+}
+EOF
     fi
+
+    # 验证配置
+    echo ""
+    echo "========================================"
+    echo "[验证] 配置完成"
+    echo "========================================"
+    echo ""
+    log_info "环境变量已写入: $SHELL_RC"
+    log_info "MCP 配置已写入: $MCP_FILE"
+    echo ""
+    log_warn "[重要] 请执行以下命令使配置生效:"
+    echo ""
+    if [[ "$SHELL" == */zsh ]]; then
+        echo "  source ~/.zshrc"
+    else
+        echo "  source ~/.bashrc"
+    fi
+    echo ""
+    log_warn "或重启终端窗口。"
+    echo ""
 }
 
-# 验证安装
+# 验证安装（更新）
 verify_installation() {
     log_info "验证安装..."
 
@@ -242,24 +375,23 @@ verify_installation() {
         return 1
     fi
 
-    # 检查技能文件
-    local skill_files=(
-        "$PLUGIN_DIR/01-RF-Skills/skills/test/SKILL.md"
-        "$PLUGIN_DIR/01-RF-Skills/skills/rf-standards-check/SKILL.md"
-        "$PLUGIN_DIR/01-RF-Skills/skills/tapd-conversion/SKILL.md"
+    # 检查插件文件
+    local plugin_files=(
+        "$PLUGIN_DIR/05-plugins/rf-testing/.mcp.json"
+        "$PLUGIN_DIR/05-plugins/rf-testing/.claude-plugin/plugin.json"
+        "$PLUGIN_DIR/05-plugins/rf-testing/commands/start.md"
     )
 
-    for skill_file in "${skill_files[@]}"; do
-        if [ -f "$skill_file" ]; then
-            log_info "✓ $(basename $(dirname $skill_file))"
+    for plugin_file in "${plugin_files[@]}"; do
+        if [ -f "$plugin_file" ]; then
+            log_info "✓ $(basename $plugin_file)"
         else
-            log_error "✗ 技能文件不存在: $skill_file"
-            return 1
+            log_warn "✗ 插件文件不存在: $plugin_file"
         fi
     done
 
-    # 检查 Python 依赖
-    python3 -c "import pandas, openpyxl, robotframework" 2>/dev/null || {
+    # 检查 Python 依赖（使用检测到的 Python）
+    "$PYTHON_CMD" -c "import pandas, openpyxl, robotframework" 2>/dev/null || {
         log_error "Python 依赖验证失败"
         return 1
     }
@@ -278,35 +410,57 @@ print_usage() {
     echo ""
     echo "插件路径: $PLUGIN_DIR"
     echo ""
-    echo "可用技能:"
-    echo "  /rf-test              - 完整测试流程"
-    echo "  /rf-standards-check   - RF 规范检查"
-    echo "  /rf-tapd-conversion   - RF 转 TAPD"
+    echo "推荐安装方式（marketplace）:"
+    echo "  1. 进入插件目录:"
+    echo "     cd $PLUGIN_DIR"
+    echo "  2. 在 Claude Code 中执行:"
+    echo "     /plugin marketplace add ."
+    echo "     /plugin install rf-testing"
+    echo ""
+    echo "可用命令:"
+    echo "  /rf-testing:start [tapd-link]  - 完整测试流程"
+    echo ""
+    echo "子工作流:"
+    echo "  /rf-testing:requirement-to-rf  - 仅需求转用例"
+    echo "  /rf-testing:rf-to-tapd       - 仅 RF 转 TAPD"
+    echo ""
+    echo "环境变量配置:"
+    echo "  TAPD_ACCESS_TOKEN=your-tapd-token (必需)"
+    echo "  GITLAB_API_URL=https://gitlab.example.com/api/v4 (可选)"
+    echo "  GITLAB_PERSONAL_ACCESS_TOKEN=your-gitlab-token (可选)"
     echo ""
     echo "使用方式:"
-    echo "  1. 重启 Claude Code"
-    echo "  2. 在对话框中输入技能命令"
+    echo "  1. 配置环境变量"
+    echo "  2. 重启 Claude Code"
+    echo "  3. 执行: /rf-testing:start"
     echo ""
     echo "注意事项:"
-    echo "  - 确保 TAPD MCP Server 已配置"
+    echo "  - 确保 TAPD_ACCESS_TOKEN 已配置"
     echo "  - 首次使用需要提供 TAPD 需求链接"
+    echo "  - RF 质量保证 Agent 会自动检查用例质量"
     echo ""
 }
 
-# 主流程
+# 主流程（更新）
 main() {
     log_info "开始安装 $PLUGIN_NAME..."
 
     # 检查环境
-    check_command python3
-    check_command pip3
     check_command git
-    check_python_version
+    check_python_environment  # 替换原有的 python3/pip3 检查
 
     # 安装步骤
     install_python_deps
     clone_plugin
-    configure_skills
+    configure_plugin
+    install_jltestlibrary
+
+    # 询问是否配置环境变量和 MCP
+    echo ""
+    read -p "是否现在配置环境变量和 MCP 服务器？(y/n): " DO_CONFIG
+    if [[ $DO_CONFIG =~ ^[Yy]$ ]]; then
+        configure_env_and_mcp
+    fi
 
     # 验证
     if verify_installation; then
