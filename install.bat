@@ -146,6 +146,14 @@ if errorlevel 1 (
     goto configure_mcp
 )
 
+REM Check if JLTestLibrary is already installed in any site-packages
+powershell -Command "$data = Get-Content '%TEMP%\site_packages.json' | ConvertFrom-Json; if ($data.jl_installed -contains $true) { exit 0 } else { exit 1 }" 2>nul
+
+if not errorlevel 1 (
+    echo [INFO] JLTestLibrary already installed, skip installation
+    goto configure_mcp
+)
+
 REM Display site-packages options
 echo.
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --python-path "%PYTHON_CMD%"

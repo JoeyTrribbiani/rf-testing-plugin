@@ -151,6 +151,22 @@ install_jltestlibrary() {
         return
     fi
 
+    # 检查 JLTestLibrary 是否已安装
+    local jl_installed
+    jl_installed=$(echo "$sp_output" | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+if data.get('jl_installed') and True in data['jl_installed']:
+    print('true')
+else:
+    print('false')
+")
+
+    if [ "$jl_installed" = "true" ]; then
+        log_info "JLTestLibrary 已安装，跳过安装"
+        return
+    fi
+
     # 显示 site-packages 选项
     echo ""
     python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --python-path "$PYTHON_CMD"
@@ -172,13 +188,6 @@ if len(paths) >= $sp_choice:
 
     if [ -z "$target_dir" ]; then
         log_warn "无效的选择，跳过安装"
-        return
-    fi
-
-    # 检查是否已安装
-    local jl_path="$target_dir/JLTestLibrary"
-    if [ -d "$jl_path" ]; then
-        log_warn "JLTestLibrary 已存在于: $jl_path"
         return
     fi
 
