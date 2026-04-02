@@ -100,7 +100,7 @@ powershell -Command "$python = '%SELECTED_PYTHON%'; $dir = Split-Path $python -P
 set /p PIP_CMD=<"%TEMP%\pip_path.txt"
 
 :install_deps
-echo [INFO] Installing Python dependencies...
+echo [INFO] Installing Python dependencies with selected Python...
 
 "%PIP_CMD%" show pandas >nul 2>&1
 if errorlevel 1 (
@@ -155,7 +155,7 @@ set /p SP_CHOICE=Select target directory. Enter number or press Enter for defaul
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
 REM Parse site-packages path
-powershell -Command "$data = Get-Content '%TEMP%\site_packages.json' | ConvertFrom-Json; $index = %SP_CHOICE% - 1; if ($index -lt $data.Count) { Write-Output $data[$index] }" > "%TEMP%\target_dir.txt"
+powershell -Command "$data = Get-Content '%TEMP%\site_packages.json' | ConvertFrom-Json; $sp = $data.site_packages; $index = %SP_CHOICE% - 1; if ($sp -and $index -ge 0 -and $index -lt $sp.Count) { Write-Output $sp[$index] }" > "%TEMP%\target_dir.txt"
 
 set /p TARGET_DIR=<"%TEMP%\target_dir.txt"
 
@@ -284,17 +284,34 @@ set PLUGIN_FILES[0]=%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json
 set PLUGIN_FILES[1]=%PLUGIN_DIR%\05-plugins\rf-testing\.claude-plugin\plugin.json
 set PLUGIN_FILES[2]=%PLUGIN_DIR%\05-plugins\rf-testing\commands\start.md
 
-for /L %%i in (0,1,2) do (
-    if exist "!PLUGIN_FILES[%%i]!" (
-        echo [INFO] File exists: %%~nxi!PLUGIN_FILES[%%i]!
-    ) else (
-        echo [WARN] File not found: !PLUGIN_FILES[%%i]!
-    )
+set PLUGIN_FILE0=%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json
+set PLUGIN_FILE1=%PLUGIN_DIR%\05-plugins\rf-testing\.claude-plugin\plugin.json
+set PLUGIN_FILE2=%PLUGIN_DIR%\05-plugins\rf-testing\commands\start.md
+
+if exist "%PLUGIN_FILE0%" (
+    echo [INFO] File exists: .mcp.json
+) else (
+    echo [WARN] File not found: .mcp.json
 )
 
+if exist "%PLUGIN_FILE1%" (
+    echo [INFO] File exists: plugin.json
+) else (
+    echo [WARN] File not found: plugin.json
+)
+
+if exist "%PLUGIN_FILE2%" (
+    echo [INFO] File exists: start.md
+) else (
+    echo [WARN] File not found: start.md
+)
+
+echo [INFO] Verifying Python dependencies with selected Python...
 "%PYTHON_CMD%" -c "import pandas, openpyxl, robotframework" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python dependencies verification failed
+    echo [ERROR] Python dependencies verification failed with selected Python
+    echo [INFO] Please install dependencies in the selected Python environment:
+    echo   "%PYTHON_CMD%" -m pip install pandas openpyxl robotframework
     goto failed
 )
 
