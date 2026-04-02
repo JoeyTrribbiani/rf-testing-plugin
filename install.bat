@@ -1,38 +1,38 @@
 @echo off
 setlocal enabledelayedexpansion
 
-REM 插件配置
+REM Plugin configuration
 set PLUGIN_NAME=rf-testing-plugin
 set PLUGIN_REPO=https://github.com/JoeyTrribbiani/rf-testing-plugin.git
 set PLUGIN_DIR=%USERPROFILE%\.claude\plugins\%PLUGIN_NAME%
 
-echo [INFO] 开始安装 %PLUGIN_NAME%...
+echo [INFO] Start installing %PLUGIN_NAME%...
 echo.
 
-REM 检查 Python
+REM Check Python
 where python >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python 未安装，请先安装 Python 3.7.16+
+    echo [ERROR] Python is not installed
     exit /b 1
 )
 
-REM 检查 git
+REM Check git
 where git >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] git 未安装，请先安装 git
+    echo [ERROR] git is not installed
     exit /b 1
 )
 
-REM 克隆插件仓库
-echo [INFO] 克隆插件仓库...
+REM Clone plugin repository
+echo [INFO] Cloning plugin repository...
 
 if exist "%PLUGIN_DIR%" (
-    echo [WARN] 插件目录已存在
-    set /p REPLY=是否删除并重新克隆？输入 y 或 n:
+    echo [WARN] Plugin directory already exists
+    set /p REPLY=Delete and re-clone? Enter y or n:
     if /i "!REPLY!"=="y" (
         rmdir /s /q "%PLUGIN_DIR%"
     ) else (
-        echo [INFO] 跳过克隆步骤
+        echo [INFO] Skip cloning step
         goto detect_python
     )
 )
@@ -43,22 +43,21 @@ if not exist "%USERPROFILE%\.claude\plugins\" (
 
 git clone "%PLUGIN_REPO%" "%PLUGIN_DIR%"
 if errorlevel 1 (
-    echo [ERROR] 克隆失败，请检查网络连接和仓库地址
+    echo [ERROR] Clone failed
     exit /b 1
 )
 
-echo [INFO] 插件克隆完成
+echo [INFO] Plugin cloned
 echo.
 
 :detect_python
-REM 检测 Python 环境
-echo [INFO] 检测 Python 环境...
+echo [INFO] Detecting Python environment...
 
 python "%PLUGIN_DIR%\03-scripts\python_detector.py" --format json > "%TEMP%\env_detection.json" 2>nul
 
 if errorlevel 1 (
-    echo [ERROR] Python 环境检测失败
-    echo [INFO] 使用系统 Python
+    echo [ERROR] Python environment detection failed
+    echo [INFO] Using system Python
     set PYTHON_CMD=python
     set PIP_CMD=pip
     goto install_deps
@@ -68,99 +67,82 @@ echo.
 python "%PLUGIN_DIR%\03-scripts\python_detector.py"
 echo.
 
-set /p PYTHON_CHOICE=请选择目标 Python 环境，按回车使用默认值 1:
+set /p PYTHON_CHOICE=Select Python environment. Enter number or press Enter for default:
 if "%PYTHON_CHOICE%"=="" set PYTHON_CHOICE=1
 
-REM 使用临时 Python 脚本解析 JSON
-echo import json > "%TEMP%\parse_env.py"
-echo data = json.load(open(r'%TEMP%\env_detection.json', encoding='utf-8')) >> "%TEMP%\parse_env.py"
-echo index = %PYTHON_CHOICE% - 1 >> "%TEMP%\parse_env.py"
-echo if len(data) > index: >> "%TEMP%\parse_env.py"
-echo     print(data[index]['python_path']) >> "%TEMP%\parse_env.py"
+REM Use Windows PowerShell to parse JSON safely
+powershell -Command "$data = Get-Content '%TEMP%\env_detection.json' | ConvertFrom-Json; $index = %PYTHON_CHOICE% - 1; if ($index -lt $data.Count) { Write-Output $data[$index].python_path }" > "%TEMP%\selected_python.txt"
 
-for /f "tokens=*" %%p in ('python "%TEMP%\parse_env.py"') do set SELECTED_PYTHON=%%p
+set /p SELECTED_PYTHON=<"%TEMP%\selected_python.txt"
 
 if "%SELECTED_PYTHON%"=="" (
-    echo [ERROR] 无效的选择
-    echo [INFO] 使用系统 Python
+    echo [ERROR] Invalid selection
+    echo [INFO] Using system Python
     set PYTHON_CMD=python
     set PIP_CMD=pip
     goto install_deps
 )
 
-REM 解析版本
-echo import json > "%TEMP%\parse_version.py"
-echo data = json.load(open(r'%TEMP%\env_detection.json', encoding='utf-8')) >> "%TEMP%\parse_version.py"
-echo index = %PYTHON_CHOICE% - 1 >> "%TEMP%\parse_version.py"
-echo if len(data) > index: >> "%TEMP%\parse_version.py"
-echo     print(data[index]['version']) >> "%TEMP%\parse_version.py"
+REM Parse version
+powershell -Command "$data = Get-Content '%TEMP%\env_detection.json' | ConvertFrom-Json; $index = %PYTHON_CHOICE% - 1; if ($index -lt $data.Count) { Write-Output $data[$index].version }" > "%TEMP%\selected_version.txt"
 
-for /f "tokens=*" %%v in ('python "%TEMP%\parse_version.py"') do set PYTHON_VERSION=%%v
+set /p PYTHON_VERSION=<"%TEMP%\selected_version.txt"
 
-echo [INFO] 已选择: Python %PYTHON_VERSION%
-echo [INFO] 路径: %SELECTED_PYTHON%
+echo [INFO] Selected: Python %PYTHON_VERSION%
+echo [INFO] Path: %SELECTED_PYTHON%
 echo.
 
 set PYTHON_CMD=%SELECTED_PYTHON%
 
-REM 查找 pip
-echo import os > "%TEMP%\find_pip.py"
-echo python_path = r'%SELECTED_PYTHON%' >> "%TEMP%\find_pip.py"
-echo python_dir = os.path.dirname(python_path) >> "%TEMP%\find_pip.py"
-echo pip_path = os.path.join(python_dir, 'pip.exe') >> "%TEMP%\find_pip.py"
-echo if os.path.exists(pip_path): >> "%TEMP%\find_pip.py"
-echo     print(pip_path) >> "%TEMP%\find_pip.py"
-echo else: >> "%TEMP%\find_pip.py"
-echo     print('pip') >> "%TEMP%\find_pip.py"
+REM Find pip
+powershell -Command "$python = '%SELECTED_PYTHON%'; $dir = Split-Path $python -Parent; $pip = Join-Path $dir 'pip.exe'; if (Test-Path $pip) { Write-Output $pip } else { Write-Output 'pip' }" > "%TEMP%\pip_path.txt"
 
-for /f "tokens=*" %%i in ('python "%TEMP%\find_pip.py"') do set PIP_CMD=%%i
+set /p PIP_CMD=<"%TEMP%\pip_path.txt"
 
 :install_deps
-REM 安装 Python 依赖
-echo [INFO] 安装 Python 依赖...
+echo [INFO] Installing Python dependencies...
 
 "%PIP_CMD%" show pandas >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] 安装 pandas...
+    echo [INFO] Installing pandas...
     "%PIP_CMD%" install pandas
 ) else (
-    echo [INFO] pandas 已安装
+    echo [INFO] pandas is already installed
 )
 
 "%PIP_CMD%" show openpyxl >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] 安装 openpyxl...
+    echo [INFO] Installing openpyxl...
     "%PIP_CMD%" install openpyxl
 ) else (
-    echo [INFO] openpyxl 已安装
+    echo [INFO] openpyxl is already installed
 )
 
 "%PIP_CMD%" show robotframework >nul 2>&1
 if errorlevel 1 (
-    echo [INFO] 安装 robotframework...
+    echo [INFO] Installing robotframework...
     "%PIP_CMD%" install robotframework
 ) else (
-    echo [INFO] robotframework 已安装
+    echo [INFO] robotframework is already installed
 )
 
-echo [INFO] Python 依赖安装完成
+echo [INFO] Python dependencies installed
 echo.
 
 :install_jl
-REM 安装 JLTestLibrary
-echo [INFO] 安装 JLTestLibrary...
+echo [INFO] Installing JLTestLibrary...
 set JL_LIBRARY=%PLUGIN_DIR%\03-scripts\JLTestLibrary.zip
 
 if not exist "%JL_LIBRARY%" (
-    echo [WARN] JLTestLibrary.zip 不存在，跳过安装
+    echo [WARN] JLTestLibrary.zip not found, skip installation
     goto configure_mcp
 )
 
-echo [INFO] 检测 site-packages 目录...
+echo [INFO] Detecting site-packages directory...
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --format json > "%TEMP%\site_packages.json" 2>nul
 
 if errorlevel 1 (
-    echo [WARN] 无法自动检测 site-packages 目录，跳过安装
+    echo [WARN] Cannot detect site-packages directory, skip installation
     goto configure_mcp
 )
 
@@ -168,91 +150,85 @@ echo.
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages
 echo.
 
-set /p SP_CHOICE=请选择目标目录，按回车使用默认值 1:
+set /p SP_CHOICE=Select target directory. Enter number or press Enter for default:
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
-REM 解析 site-packages 路径
-echo import json > "%TEMP%\parse_sp.py"
-echo data = json.load(open(r'%TEMP%\site_packages.json', encoding='utf-8')) >> "%TEMP%\parse_sp.py"
-echo index = %SP_CHOICE% - 1 >> "%TEMP%\parse_sp.py"
-echo if 'site_packages' in data and len(data['site_packages']) > index: >> "%TEMP%\parse_sp.py"
-echo     print(data['site_packages'][index]) >> "%TEMP%\parse_sp.py"
+REM Parse site-packages path
+powershell -Command "$data = Get-Content '%TEMP%\site_packages.json' | ConvertFrom-Json; $index = %SP_CHOICE% - 1; if ($data.site_packages -and $index -lt $data.site_packages.Count) { Write-Output $data.site_packages[$index] }" > "%TEMP%\target_dir.txt"
 
-for /f "tokens=*" %%p in ('python "%TEMP%\parse_sp.py"') do set TARGET_DIR=%%p
+set /p TARGET_DIR=<"%TEMP%\target_dir.txt"
 
 if "%TARGET_DIR%"=="" (
-    echo [WARN] 无效的选择，跳过安装
+    echo [WARN] Invalid selection, skip installation
     goto configure_mcp
 )
 
 if exist "%TARGET_DIR%\JLTestLibrary" (
-    echo [WARN] JLTestLibrary 已存在，跳过安装
+    echo [WARN] JLTestLibrary already exists, skip installation
     goto configure_mcp
 )
 
-echo [INFO] 解压到: %TARGET_DIR%
+echo [INFO] Extracting to: %TARGET_DIR%
 powershell -Command "Expand-Archive -Path '%JL_LIBRARY%' -DestinationPath '%TARGET_DIR%' -Force" 2>nul
 
 if errorlevel 1 (
-    echo [WARN] 解压失败，请检查权限
+    echo [WARN] Extraction failed, check permissions
     goto configure_mcp
 )
 
 "%PYTHON_CMD%" -c "import JLTestLibrary" >nul 2>&1
 if errorlevel 1 (
-    echo [WARN] 验证失败
+    echo [WARN] Verification failed
 ) else (
-    echo [INFO] JLTestLibrary 安装成功
+    echo [INFO] JLTestLibrary installed successfully
 )
 
 echo.
 
 :configure_mcp
-echo [INFO] 提示：推荐通过 marketplace 安装插件
-echo [INFO] 在 Claude Code 中执行：
+echo [INFO] Note: Recommend installing via marketplace
+echo [INFO] Run in Claude Code:
 echo   /plugin marketplace add .
 echo   /plugin install rf-testing
 echo.
 
-REM 配置环境变量和 MCP
+echo Configure environment variables and MCP servers
 echo.
-echo 配置环境变量和 MCP 服务器
-echo.
-set /p DO_CONFIG=是否现在配置？输入 y 或 n，按回车跳过:
+set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:
 if /i not "%DO_CONFIG%"=="y" goto verify_install
 
-REM 收集 TAPD 配置
+REM Collect TAPD configuration
 echo.
-echo 配置 TAPD 访问令牌
-echo 获取令牌: https://www.tapd.cn/personal_settings/index?tab=personal_token
-set /p TAPD_TOKEN=请输入 TAPD_ACCESS_TOKEN:
+echo Configure TAPD access token
+echo Get token at: https://www.tapd.cn/personal_settings/index?tab=personal_token
+set /p TAPD_TOKEN=Enter TAPD_ACCESS_TOKEN:
 
 if "%TAPD_TOKEN%"=="" (
-    echo [WARN] 令牌不能为空
-    set /p SKIP_CONFIG=是否跳过配置？输入 y 或 n:
+    echo [WARN] Token is empty
+    set /p SKIP_CONFIG=Skip configuration? Enter y or n:
     if /i "%SKIP_CONFIG%"=="y" goto verify_install
 )
 
-REM 收集 GitLab 配置
+REM Collect GitLab configuration
 echo.
-echo 配置 GitLab（可选，按回车跳过）
-echo 获取令牌: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
-set /p GITLAB_URL=请输入 GITLAB_API_URL，按回车使用默认值:
+echo Configure GitLab. Optional, press Enter to skip
+echo Get token at: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
+set /p GITLAB_URL=Enter GITLAB_API_URL. Press Enter for default:
 if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
-set /p GITLAB_TOKEN=请输入 GITLAB_TOKEN，可选按回车跳过:
+set /p GITLAB_TOKEN=Enter GITLAB_TOKEN. Optional, press Enter to skip:
 
-REM 写入环境变量
+REM Write environment variables
 echo.
-echo 写入系统环境变量...
+echo Writing system environment variables...
 setx TAPD_ACCESS_TOKEN "%TAPD_TOKEN%" >nul
 setx GITLAB_API_URL "%GITLAB_URL%" >nul
 if not "%GITLAB_TOKEN%"=="" setx GITLAB_PERSONAL_ACCESS_TOKEN "%GITLAB_TOKEN%" >nul
-echo [INFO] 环境变量已写入系统
+echo [INFO] Environment variables written
 
-REM 创建 MCP 配置
+REM Create MCP configuration
 echo.
-echo 配置 Claude MCP 服务器...
+echo Configuring Claude MCP servers...
 set CLAUDE_CONFIG_DIR=%USERPROFILE%\.claude
 set MCP_FILE=%CLAUDE_CONFIG_DIR%\mcp.json
 
@@ -287,19 +263,19 @@ echo   }>> "%JSON_TEMP%"
 echo }>> "%JSON_TEMP%"
 
 move "%JSON_TEMP%" "%MCP_FILE%" >nul
-echo [INFO] MCP 配置已写入
+echo [INFO] MCP configuration written
 
 echo.
-echo 配置完成
+echo Configuration complete
 echo.
-echo [WARN] 需要重启终端或 Claude 才能生效
+echo [WARN] Restart terminal or Claude to take effect
 echo.
 
 :verify_install
-echo [INFO] 验证安装...
+echo [INFO] Verifying installation...
 
 if not exist "%PLUGIN_DIR%" (
-    echo [ERROR] 插件目录不存在
+    echo [ERROR] Plugin directory not found
     goto failed
 )
 
@@ -309,37 +285,37 @@ set PLUGIN_FILES[2]=%PLUGIN_DIR%\05-plugins\rf-testing\commands\start.md
 
 for /L %%i in (0,1,2) do (
     if exist "!PLUGIN_FILES[%%i]!" (
-        echo [INFO] 文件存在: %%~nxi!PLUGIN_FILES[%%i]!
+        echo [INFO] File exists: %%~nxi!PLUGIN_FILES[%%i]!
     ) else (
-        echo [WARN] 文件不存在: !PLUGIN_FILES[%%i]!
+        echo [WARN] File not found: !PLUGIN_FILES[%%i]!
     )
 )
 
 "%PYTHON_CMD%" -c "import pandas, openpyxl, robotframework" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python 依赖验证失败
+    echo [ERROR] Python dependencies verification failed
     goto failed
 )
 
-echo [INFO] Python 依赖验证通过
+echo [INFO] Python dependencies verification passed
 echo.
 
-echo 安装完成
+echo Installation Complete
 echo.
-echo 插件路径: %PLUGIN_DIR%
+echo Plugin path: %PLUGIN_DIR%
 echo.
-echo 可用命令:
-echo   /rf-testing:start - 完整测试流程
+echo Available commands:
+echo   /rf-testing:start - Full test workflow
 echo.
-echo 环境变量:
-echo   TAPD_ACCESS_TOKEN - 必需
-echo   GITLAB_API_URL - 可选
-echo   GITLAB_PERSONAL_ACCESS_TOKEN - 可选
+echo Environment variables:
+echo   TAPD_ACCESS_TOKEN - Required
+echo   GITLAB_API_URL - Optional
+echo   GITLAB_PERSONAL_ACCESS_TOKEN - Optional
 echo.
 
-echo [INFO] 安装成功
+echo [INFO] Installation successful
 exit /b 0
 
 :failed
-echo [ERROR] 安装验证失败
+echo [ERROR] Installation verification failed
 exit /b 1
