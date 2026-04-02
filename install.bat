@@ -32,7 +32,7 @@ echo [INFO] Cloning plugin repository...
 
 if exist "%PLUGIN_DIR%" (
     echo [WARN] Plugin directory already exists: %PLUGIN_DIR%
-    set /p "REPLY=Delete and re-clone? (y/n): "
+    set /p REPLY=Delete and re-clone (y/n):
     if /i "!REPLY!"=="y" (
         rmdir /s /q "%PLUGIN_DIR%"
     ) else (
@@ -75,7 +75,7 @@ python "%PLUGIN_DIR%\03-scripts\python_detector.py"
 echo.
 
 REM Get user choice
-set /p "PYTHON_CHOICE=Select target Python environment [default=1]: "
+set /p PYTHON_CHOICE=Select target Python environment, press Enter for default=1:
 if "%PYTHON_CHOICE%"=="" set PYTHON_CHOICE=1
 
 REM Parse selected Python path
@@ -159,7 +159,7 @@ echo.
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages
 echo.
 
-set /p "SP_CHOICE=Select target directory [default=1]: "
+set /p SP_CHOICE=Select target directory, press Enter for default=1:
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
 REM Parse path
@@ -209,19 +209,20 @@ echo ========================================
 echo   Configure environment variables and MCP servers
 echo ========================================
 echo.
-set /p DO_CONFIG=Configure environment variables and MCP servers now? (y/n):
+set /p DO_CONFIG=Configure environment variables and MCP servers now (y/n):
 if /i not "%DO_CONFIG%"=="y" goto verify_install
 
 REM Collect TAPD configuration
 echo.
 echo [1/4] Configure TAPD access token
 echo ----------------------------------------
-set /p TAPD_TOKEN=Please enter TAPD_ACCESS_TOKEN:
+echo Get token at: https://www.tapd.cn/personal_settings/index?tab=personal_token
+set /p TAPD_TOKEN=Enter TAPD_ACCESS_TOKEN:
 
 if "%TAPD_TOKEN%"=="" (
     echo [WARN] TAPD_ACCESS_TOKEN cannot be empty
     echo [WARN] You can configure manually later, skip this step
-    set /p SKIP_CONFIG=Skip configuration? (y/n):
+    set /p SKIP_CONFIG=Skip configuration (y/n):
     if /i "%SKIP_CONFIG%"=="y" goto verify_install
 )
 
@@ -229,10 +230,11 @@ REM Collect GitLab configuration (optional)
 echo.
 echo [2/4] Configure GitLab (optional, press Enter to skip)
 echo ----------------------------------------
-set /p GITLAB_URL=Please enter GITLAB_API_URL (default: https://gitlab.jlpay.com/api/v4):
+echo Get token at: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens?name=rf-testing-plugin&scopes=api%2Cread_user
+set /p GITLAB_URL=Enter GITLAB_API_URL, press Enter for default=:
 if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
-set /p GITLAB_TOKEN=Please enter GITLAB_PERSONAL_ACCESS_TOKEN (optional):
+set /p GITLAB_TOKEN=Enter GITLAB_PERSONAL_ACCESS_TOKEN, optional press Enter to skip:
 
 REM Write environment variables (user level)
 echo.

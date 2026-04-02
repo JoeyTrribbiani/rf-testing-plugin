@@ -41,6 +41,11 @@ chmod +x install.sh
 
 安装脚本会自动引导配置环境变量和 MCP 服务器，按提示输入即可。
 
+**获取访问令牌：**
+
+- **TAPD Token**: https://www.tapd.cn/personal_settings/index?tab=personal_token
+- **GitLab Token**: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens?name=rf-testing-plugin&scopes=api%2Cread_user
+
 **手动配置：**
 
 必需环境变量：
