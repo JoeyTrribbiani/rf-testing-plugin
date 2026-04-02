@@ -83,7 +83,15 @@ else:
 
     # 设置 Python 和 pip 命令
     PYTHON_CMD="$SELECTED_PYTHON_PATH"
-    PIP_CMD=$(python3 -c "import os; print(os.path.join(os.path.dirname('$SELECTED_PYTHON_PATH'), 'pip'))" | sed 's/python/pip/g')
+    # conda envs: bin/pip (Linux/macOS) or Scripts/pip.exe (Windows)
+    local python_dir=$(dirname "$SELECTED_PYTHON_PATH")
+    if [ -f "$python_dir/pip" ]; then
+        PIP_CMD="$python_dir/pip"
+    elif [ -f "$python_dir/Scripts/pip.exe" ]; then
+        PIP_CMD="$python_dir/Scripts/pip.exe"
+    else
+        PIP_CMD="pip"
+    fi
 }
 
 # 安装 Python 依赖（更新）
@@ -391,7 +399,7 @@ verify_installation() {
     done
 
     # 检查 Python 依赖（使用检测到的 Python）
-    "$PYTHON_CMD" -c "import pandas, openpyxl, robotframework" 2>/dev/null || {
+    "$PYTHON_CMD" -c "import pandas, openpyxl, robot" 2>/dev/null || {
         log_error "Python 依赖验证失败"
         return 1
     }

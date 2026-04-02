@@ -94,8 +94,8 @@ echo.
 
 set PYTHON_CMD=%SELECTED_PYTHON%
 
-REM Find pip
-powershell -Command "$python = '%SELECTED_PYTHON%'; $dir = Split-Path $python -Parent; $pip = Join-Path $dir 'pip.exe'; if (Test-Path $pip) { Write-Output $pip } else { Write-Output 'pip' }" > "%TEMP%\pip_path.txt"
+REM Find pip - conda envs have pip in Scripts directory
+powershell -Command "$python = '%SELECTED_PYTHON%'; $dir = Split-Path $python -Parent; $pip = Join-Path $dir 'Scripts\pip.exe'; if (Test-Path $pip) { Write-Output $pip } else { Write-Output 'pip' }" > "%TEMP%\pip_path.txt"
 
 set /p PIP_CMD=<"%TEMP%\pip_path.txt"
 
@@ -307,7 +307,7 @@ if exist "%PLUGIN_FILE2%" (
 )
 
 echo [INFO] Verifying Python dependencies with selected Python...
-"%PYTHON_CMD%" -c "import pandas, openpyxl, robotframework" >nul 2>&1
+"%PYTHON_CMD%" -c "import pandas, openpyxl, robot" >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python dependencies verification failed with selected Python
     echo [INFO] Please install dependencies in the selected Python environment:
