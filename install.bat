@@ -139,13 +139,14 @@ if not exist "%JL_LIBRARY%" (
 )
 
 echo [INFO] Detecting site-packages directory...
-"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --format json --python-path "%PYTHON_CMD%" > "%TEMP%\site_packages.json" 2>nul
+"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --format json --site-packages --python-path "%PYTHON_CMD%" > "%TEMP%\site_packages.json" 2>nul
 
 if errorlevel 1 (
     echo [WARN] Cannot detect site-packages directory, skip installation
     goto configure_mcp
 )
 
+REM Display site-packages options
 echo.
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --python-path "%PYTHON_CMD%"
 echo.
@@ -154,7 +155,7 @@ set /p SP_CHOICE=Select target directory. Enter number or press Enter for defaul
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
 REM Parse site-packages path
-powershell -Command "$data = Get-Content '%TEMP%\site_packages.json' | ConvertFrom-Json; $index = %SP_CHOICE% - 1; if ($data.site_packages -and $index -lt $data.site_packages.Count) { Write-Output $data.site_packages[$index] }" > "%TEMP%\target_dir.txt"
+powershell -Command "$data = Get-Content '%TEMP%\site_packages.json' | ConvertFrom-Json; $index = %SP_CHOICE% - 1; if ($index -lt $data.Count) { Write-Output $data[$index] }" > "%TEMP%\target_dir.txt"
 
 set /p TARGET_DIR=<"%TEMP%\target_dir.txt"
 

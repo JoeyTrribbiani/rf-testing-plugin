@@ -528,7 +528,32 @@ def main():
     args = parser.parse_args()
 
     try:
-        # 检测 Python 环境
+        # 检测 site-packages (单独模式)
+        if args.site_packages:
+            # 如果指定了 python-path，使用它；否则使用第一个环境
+            target_python = args.python_path
+            if not target_python:
+                envs = detect_all_python_environments()
+                if envs:
+                    target_python = envs[0].python_path
+
+            if target_python:
+                paths = get_site_packages_paths(target_python)
+                jl_installed = [
+                    os.path.exists(os.path.join(p, "JLTestLibrary")) for p in paths
+                ]
+
+                if args.format == "json":
+                    import json
+                    print(json.dumps({
+                        "site_packages": paths,
+                        "jl_installed": jl_installed
+                    }, indent=2))
+                else:
+                    print(display_site_packages(paths, jl_installed))
+            return
+
+        # 检测 Python 环境 (默认模式)
         envs = detect_all_python_environments()
 
         if args.format == "json":
@@ -536,21 +561,6 @@ def main():
             print(json.dumps([e.to_dict() for e in envs], indent=2))
         else:
             print(display_environments(envs))
-
-        # 检测 site-packages
-        if args.site_packages:
-            # 如果指定了 python-path，使用它；否则使用第一个环境
-            target_python = args.python_path
-            if not target_python and envs:
-                target_python = envs[0].python_path
-
-            if target_python:
-                paths = get_site_packages_paths(target_python)
-                jl_installed = [
-                    os.path.exists(os.path.join(p, "JLTestLibrary")) for p in paths
-                ]
-                print()
-                print(display_site_packages(paths, jl_installed))
 
     except PythonDetectionError as e:
         print(f"错误: {e}", file=sys.stderr)
