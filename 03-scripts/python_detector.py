@@ -475,17 +475,15 @@ def display_environments(envs: List[PythonEnvironment]) -> str:
         显示文本
     """
     lines = []
-    lines.append("检测到以下 Python 环境：")
+    lines.append("Detected Python environments:")
     lines.append("")
 
     for i, env in enumerate(envs, 1):
-        if i == 1:
-            lines.append(f"[推荐] {i}. {env}")
-        else:
-            lines.append(f"       {i}. {env}")
+        active_mark = " [Active]" if env.is_active else ""
+        lines.append(f"{i}. {env.source}: {env.name} ({env.version}){active_mark}")
 
     lines.append("")
-    lines.append(f"请选择目标 Python 环境 [1-{len(envs)}, 默认=1]:")
+    lines.append(f"Select target Python environment, default is 1:")
 
     return '\n'.join(lines)
 
@@ -502,20 +500,15 @@ def display_site_packages(paths: List[str], jl_installed: List[bool]) -> str:
         显示文本
     """
     lines = []
-    lines.append("检测到 site-packages 目录：")
+    lines.append("Detected site-packages directories:")
     lines.append("")
 
     for i, (path, has_jl) in enumerate(zip(paths, jl_installed), 1):
-        if i == 1:
-            marker = "[推荐] "
-        else:
-            marker = "       "
-
-        jl_status = " [JLTestLibrary 已存在]" if has_jl else ""
-        lines.append(f"{marker}{i}. {path}{jl_status}")
+        jl_status = " [JLTestLibrary exists]" if has_jl else ""
+        lines.append(f"{i}. {path}{jl_status}")
 
     lines.append("")
-    lines.append(f"请选择目标目录 [1-{len(paths)}, 默认=1]:")
+    lines.append(f"Select target directory, default is 1:")
 
     return '\n'.join(lines)
 

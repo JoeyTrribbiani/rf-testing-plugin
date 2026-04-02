@@ -71,7 +71,14 @@ echo.
 set /p PYTHON_CHOICE=Select Python environment. Enter number or press Enter for default:
 if "%PYTHON_CHOICE%"=="" set PYTHON_CHOICE=1
 
-for /f "tokens=*" %%p in ('python -c "import json; data=json.load(open(r''%TEMP%\env_detection.json'', encoding=''utf-8'')); print(data[%PYTHON_CHOICE% - 1][''python_path''] if len(data) >= %PYTHON_CHOICE% else '''')"') do set SELECTED_PYTHON=%%p
+REM Use temp Python script to parse JSON
+echo import json > "%TEMP%\parse_env.py"
+echo data = json.load(open(r'%TEMP%\env_detection.json', encoding='utf-8')) >> "%TEMP%\parse_env.py"
+echo index = %PYTHON_CHOICE% - 1 >> "%TEMP%\parse_env.py"
+echo if len(data) > index: >> "%TEMP%\parse_env.py"
+echo     print(data[index]['python_path']) >> "%TEMP%\parse_env.py"
+
+for /f "tokens=*" %%p in ('python "%TEMP%\parse_env.py"') do set SELECTED_PYTHON=%%p
 
 if "%SELECTED_PYTHON%"=="" (
     echo [ERROR] Invalid selection
@@ -81,15 +88,32 @@ if "%SELECTED_PYTHON%"=="" (
     goto install_deps
 )
 
-for /f "tokens=*" %%v in ('python -c "import json; data=json.load(open(r''%TEMP%\env_detection.json'', encoding=''utf-8'')); print(data[%PYTHON_CHOICE% - 1][''version''])"') do set PYTHON_VERSION=%%v
+REM Parse version
+echo import json > "%TEMP%\parse_version.py"
+echo data = json.load(open(r'%TEMP%\env_detection.json', encoding='utf-8')) >> "%TEMP%\parse_version.py"
+echo index = %PYTHON_CHOICE% - 1 >> "%TEMP%\parse_version.py"
+echo if len(data) > index: >> "%TEMP%\parse_version.py"
+echo     print(data[index]['version']) >> "%TEMP%\parse_version.py"
+
+for /f "tokens=*" %%v in ('python "%TEMP%\parse_version.py"') do set PYTHON_VERSION=%%v
 
 echo [INFO] Selected: Python %PYTHON_VERSION%
 echo [INFO] Path: %SELECTED_PYTHON%
 echo.
 
 set PYTHON_CMD=%SELECTED_PYTHON%
-for /f "tokens=*" %%i in ('python -c "import os; print(os.path.join(os.path.dirname(r''%SELECTED_PYTHON%''), ''pip''))"') do set PIP_CMD=%%i
-if not exist "%PIP_CMD%" set PIP_CMD=pip
+
+REM Find pip
+echo import os > "%TEMP%\find_pip.py"
+echo python_path = r'%SELECTED_PYTHON%' >> "%TEMP%\find_pip.py"
+echo python_dir = os.path.dirname(python_path) >> "%TEMP%\find_pip.py"
+echo pip_path = os.path.join(python_dir, 'pip.exe') >> "%TEMP%\find_pip.py"
+echo if os.path.exists(pip_path): >> "%TEMP%\find_pip.py"
+echo     print(pip_path) >> "%TEMP%\find_pip.py"
+echo else: >> "%TEMP%\find_pip.py"
+echo     print('pip') >> "%TEMP%\find_pip.py"
+
+for /f "tokens=*" %%i in ('python "%TEMP%\find_pip.py"') do set PIP_CMD=%%i
 
 :install_deps
 REM Install Python dependencies
@@ -147,7 +171,14 @@ echo.
 set /p SP_CHOICE=Select target directory. Enter number or press Enter for default:
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
-for /f "tokens=*" %%p in ('python -c "import json; data=json.load(open(r''%TEMP%\site_packages.json'', encoding=''utf-8'')); print(data[''site_packages''][%SP_CHOICE% - 1])"') do set TARGET_DIR=%%p
+REM Parse site-packages path
+echo import json > "%TEMP%\parse_sp.py"
+echo data = json.load(open(r'%TEMP%\site_packages.json', encoding='utf-8')) >> "%TEMP%\parse_sp.py"
+echo index = %SP_CHOICE% - 1 >> "%TEMP%\parse_sp.py"
+echo if 'site_packages' in data and len(data['site_packages']) > index: >> "%TEMP%\parse_sp.py"
+echo     print(data['site_packages'][index]) >> "%TEMP%\parse_sp.py"
+
+for /f "tokens=*" %%p in ('python "%TEMP%\parse_sp.py"') do set TARGET_DIR=%%p
 
 if "%TARGET_DIR%"=="" (
     echo [WARN] Invalid selection, skip installation
