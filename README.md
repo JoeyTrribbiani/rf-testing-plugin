@@ -6,56 +6,129 @@
 
 - 🔍 **需求分析**: 从 TAPD 拉取需求，识别测试场景和测试点
 - 📝 **用例生成**: 基于测试点生成符合 RF 规范的用例脚本
-- ✅ **规范检查**: 检查 RF 用例是否符合编写规范
+- ✅ **质量保证**: RF 质量保证 Agent 检查用例质量和标准合规性
+- 🔬 **规范检查**: 检查 RF 用例是否符合 JL 企业编写规范
 - 📊 **TAPD 转换**: 将 RF 用例转换为 TAPD 可导入格式
 - 🔄 **工作流编排**: 支持完整的测试工作流和子流程
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 安装插件
 
-```bash
-pip install pandas openpyxl robotframework
+通过 marketplace 安装插件：
+
+```text
+/plugin marketplace add .
+/plugin install rf-testing
 ```
 
-### 2. 配置 MCP
+或使用一键安装脚本：
 
-确保 **TAPD MCP Server** 已部署并配置到 Claude Code。
+**Windows:**
+```cmd
+install.bat
+```
 
-### 3. 目录结构
+**Linux/macOS:**
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+### 2. 配置环境变量
+
+**推荐方式：使用安装脚本配置**
+
+安装脚本会自动引导配置环境变量和 MCP 服务器，按提示输入即可。
+
+**手动配置：**
+
+必需环境变量：
+```bash
+export TAPD_ACCESS_TOKEN="your-tapd-token"
+```
+
+可选环境变量（如需 GitLab 支持）：
+```bash
+export GITLAB_API_URL="https://gitlab.example.com/api/v4"
+export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
+```
+
+**Windows 手动配置：**
+1. 右键"此电脑" → 属性 → 高级系统设置 → 环境变量
+2. 在"用户变量"中添加上述变量
+3. 重启终端或 Claude
+
+**Linux/macOS 手动配置：**
+```bash
+# 添加到 ~/.bashrc 或 ~/.zshrc
+export TAPD_ACCESS_TOKEN="your-tapd-token"
+export GITLAB_API_URL="https://gitlab.example.com/api/v4"
+export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
+
+# 使配置生效
+source ~/.bashrc  # 或 source ~/.zshrc
+```
+
+### 3. 安装依赖
+
+#### 使用安装脚本（推荐）
+
+安装脚本会自动：
+
+1. 智能检测系统中所有符合条件的 Python 环境（3.7.16+）
+2. 自动推荐最合适的 Python 版本
+3. 自动检测 site-packages 目录
+4. 自动安装所有依赖
+5. 自动安装 JLTestLibrary
+6. 可选配置环境变量和 MCP 服务器
+
+**Windows:**
+```cmd
+install.bat
+```
+
+**Linux/macOS:**
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+#### 手动安装
+
+详见 `requirements.txt`：
+
+```bash
+pip install -r requirements.txt
+```
+
+手动安装 JLTestLibrary：
+```bash
+unzip 03-scripts/JLTestLibrary.zip -d $HOME/Library/Python/3.7/site-packages/
+```
+
+### 4. 目录结构
 
 ```
 rf-testing-plugin/
 ├── 00-JL-Skills/          # JL 公共库（指令、规范、模板）
 ├── 01-RF-Skills/          # RF 测试技能
-├── 02-workflows/           # 工作流定义（Mermaid flowchart）
-├── 03-scripts/             # 实用脚本
+├── 02-agents/             # 测试 agents
+│   └── testing-rf-quality-assurance.md  # RF 质量保证 agent
+├── 03-scripts/            # 实用脚本和资源
+│   ├── JLTestLibrary.zip  # Robot Framework 自定义测试库
+│   ├── robot2tapd.py
+│   └── batch_convert.sh
 ├── 04-cases/              # 使用案例
-├── .claude-plugin/         # Plugin 元数据
+├── 05-plugins/            # 插件目录
+│   └── rf-testing/        # rf-testing 插件
+│       ├── workflows/     # 工作流定义
+│       ├── commands/      # 入口命令
+│       ├── .mcp.json      # MCP 配置
+│       └── README.md
+├── docs/                  # 文档
+├── .claude-plugin/        # Plugin 元数据
 └── README.md
-```
-
-### 4. 配置 Claude Skills
-
-在 Claude `settings.json` 中引用技能：
-
-```json
-{
-  "skills": [
-    {
-      "name": "rf-test",
-      "path": "01-RF-Skills/skills/test/SKILL.md"
-    },
-    {
-      "name": "rf-standards-check",
-      "path": "01-RF-Skills/skills/rf-standards-check/SKILL.md"
-    },
-    {
-      "name": "rf-tapd-conversion",
-      "path": "01-RF-Skills/skills/tapd-conversion/SKILL.md"
-    }
-  ]
-}
 ```
 
 ## 使用方式
@@ -65,31 +138,23 @@ rf-testing-plugin/
 从 TAPD 需求到 TAPD 导出的完整流程。
 
 ```bash
-/rf-test
+/rf-testing:start <tapd-link>
 ```
 
-### 需求转用例
+如果不传链接，插件会直接向用户索要 TAPD 需求链接。
 
-从 TAPD 需求生成 RF 测试用例。
+### 子工作流
+
+#### 需求转用例
 
 ```bash
-/rf-requirement-to-testcase
+/rf-testing:requirement-to-rf <tapd-link>
 ```
 
-### RF 转 TAPD
-
-将 RF 用例转换为 TAPD 格式。
+#### RF 转 TAPD
 
 ```bash
-/rf-to-tapd
-```
-
-### 仅规范检查
-
-检查 RF 用例是否符合编写规范。
-
-```bash
-/rf-standards-check
+/rf-testing:rf-to-tapd <robot-file-path>
 ```
 
 ## 核心技能
@@ -102,8 +167,9 @@ rf-testing-plugin/
 1. 从 TAPD 拉取需求内容
 2. 识别测试场景和测试点
 3. 生成 Robot Framework 用例
-4. 检查 RF 规范
-5. 转换为 TAPD 格式并导出
+4. RF 质量保证检查
+5. 检查 RF 规范
+6. 转换为 TAPD 格式并导出
 
 ### rf-standards-check
 
@@ -112,8 +178,8 @@ RF 编写规范检查技能。
 **检查项**：
 - [Documentation] 标签格式（三段式）
 - [Tags] 标签使用（优先级、评审状态）
-- 变量命名规范
-- 关键字命名规范
+- 变量命名规范（蛇形命名法：${变量名}）
+- 关键字命名规范（驼峰命名法：关键字名）
 - 内联注释使用
 - JSONPath 表达式正确性
 
@@ -127,19 +193,49 @@ RF 用例转 TAPD 格式技能。
 3. 生成 Excel 文件
 4. 生成 Base64 编码
 
-## 工作流
+## RF 质量保证 Agent
 
-### full-test-pipeline
+`testing-rf-quality-assurance` agent 负责验证生成的 RF 用例是否符合 JL 企业标准和最佳实践。
 
-完整测试工作流：TAPD 需求 → RF 用例 → 规范检查 → TAPD 导出
+### 检查项
 
-### requirement-to-rf
+- **变量命名**: 蛇形命名法 `${变量名}`
+- **关键字命名**: 驼峰命名法 `关键字名`
+- **文档格式**: 三段式格式（概述-前置条件-预期结果）
+- **Tag 使用**: 包含优先级和评审状态
+- **JSONPath 表达式**: 验证正确性
 
-需求转用例工作流：TAPD 需求 → RF 用例生成 → 规范检查
+### 成功指标
 
-### rf-to-tapd
+- 90% 的 RF 用例首次评审通过质量门禁
+- 95% 符合 JL 企业标准
+- 质量评审周转时间 < 2 小时/用例
 
-RF 转 TAPD 工作流：RF 用例 → TAPD 转换 → 导出
+## 工作流节点
+
+### MCP 节点
+
+| 节点 | MCP 服务器 | 功能 |
+|------|------------|------|
+| mcp_fetch | tapd | 从 TAPD 拉取需求内容 |
+| mcp_export | tapd | 将测试用例导出到 TAPD |
+
+### 技能节点
+
+| 节点 | 技能 | 功能 |
+|------|------|------|
+| skill_scenario | rf-test | 识别测试场景 |
+| skill_points | rf-test | 识别测试点 |
+| skill_generation | rf-test | 生成 RF 用例 |
+| skill_validation | rf-standards-check | 检查 RF 规范 |
+| skill_conversion | rf-tapd-conversion | RF 转 TAPD 格式 |
+
+### Agent 节点
+
+| 节点 | Agent | 功能 |
+|------|-------|------|
+| agent_rf_qa | testing-rf-quality-assurance | RF 质量保证检查 |
+| agent_results | Test Results Analyzer | 测试结果分析 |
 
 ## 实用脚本
 
@@ -164,6 +260,40 @@ python 03-scripts/robot2tapd.py <robot_path> \
 **用法**：
 ```bash
 ./03-scripts/batch_convert.sh <robot_dir> <output_dir> <creator>
+```
+
+### JLTestLibrary
+
+Robot Framework 自定义测试库，位于 `03-scripts/JLTestLibrary.zip`。
+
+**安装方式**：
+```bash
+# 解压到项目目录或 Python 环境的 site-packages
+unzip 03-scripts/JLTestLibrary.zip -d <target_dir>
+```
+
+## Python 环境智能检测
+
+安装脚本支持以下 Python 环境的自动检测：
+
+| 环境类型 | 说明 | 示例路径 |
+|---------|------|---------|
+| Conda | 所有 conda 环境 | `conda: rf-env (3.7.18)` |
+| System | 系统安装的 Python | `system: /usr/bin/python3.8` |
+| Venv | 虚拟环境 | `venv: /path/to/venv` |
+
+脚本会自动优先选择最接近 3.7.16+ 的版本，确保 JLTestLibrary 兼容性。
+
+### 检测示例
+
+```
+检测到以下 Python 环境：
+
+[推荐] 1. conda: rf-env (3.7.18)  [当前激活]
+       2. conda: py37 (3.7.16)
+       3. system: /usr/bin/python3.8 (3.8.10)
+
+请选择目标 Python 环境 [1-3, 默认=1]:
 ```
 
 ## 模板和规范
@@ -198,8 +328,11 @@ python 03-scripts/robot2tapd.py <robot_path> \
 
 ### 规范文档
 
-- `JSONPath 使用指南.md`: JSONPath 语法和示例
 - `RF 关键字编写规范.md`: 关键字编写标准
+- `BuiltIn 库使用规范.md`: BuiltIn 库使用指南
+- `JSONPath 使用指南.md`: JSONPath 语法和示例
+- `DateTime 库使用规范.md`: DateTime 库使用指南
+- `商户系统业务规范.md`: 商户系统业务领域规范
 
 ## 使用案例
 
@@ -217,22 +350,35 @@ python 03-scripts/robot2tapd.py <robot_path> \
 
 - ✅ Claude Plugin 元数据格式（`.claude-plugin/marketplace.json` + `plugin.json`）
 - ✅ Mermaid flowchart 工作流编排
+- ✅ MCP 配置（`.mcp.json`）
 - ✅ 统一交互协议（INTERACTION_PROTOCOL.md）
 - ✅ SKILL.md 格式的技能定义
 - ✅ jl-skills 公共库（指令/规范/模板）
-- ✅ MCP Task 集成（TAPD）
+- ✅ MCP Task 集成（TAPD、GitLab）
+- ✅ 测试 Agents 集成
+
+## 配置参数
+
+```json
+{
+  "tapd_workspace_id": "48200023",
+  "output_dir": "./output",
+  "creator": "测试工程师",
+  "test_case_priority": "P0,P1,P2"
+}
+```
 
 ## 依赖
 
-- Python 3.10+
-- pandas
-- openpyxl
-- robotframework
-- TAPD MCP Server
+详见 `requirements.txt`
+
+```bash
+pip install -r requirements.txt
+```
 
 ## 参考
 
-- [AI-First 开发插件](../ai-first-master/README.md)
+- [AI-First 开发插件](https://gitlab.jlpay.com/pay-plus/base/ai-first)
 - [Robot Framework 官方文档](https://robotframework.org/)
 - [TAPD 平台](https://www.tapd.cn/)
 
