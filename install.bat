@@ -26,12 +26,12 @@ REM Clone plugin repository
 echo [INFO] Cloning plugin repository...
 
 if exist "%PLUGIN_DIR%" (
-    echo [WARN] Plugin directory already exists
-    set /p REPLY=Delete and re-clone? Enter y or n:
+    echo [WARN] 插件目录已存在
+    set /p REPLY=删除并重新克隆？输入 y 或 n:
     if /i "%REPLY%"=="y" (
         rmdir /s /q "%PLUGIN_DIR%"
     ) else (
-        echo [INFO] Skip cloning step
+        echo [INFO] 跳过克隆步骤
         goto detect_python
     )
 )
@@ -66,7 +66,7 @@ echo.
 python "%PLUGIN_DIR%\03-scripts\python_detector.py"
 echo.
 
-set /p PYTHON_CHOICE=Select Python environment. Enter number or press Enter for default:
+set /p PYTHON_CHOICE=选择 Python 环境。输入数字或按 Enter 使用默认值:
 if "%PYTHON_CHOICE%"=="" set PYTHON_CHOICE=1
 
 REM Use Windows PowerShell to parse JSON safely
@@ -158,7 +158,7 @@ echo.
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --python-path "%PYTHON_CMD%"
 echo.
 
-set /p SP_CHOICE=Select target directory. Enter number or press Enter for default:
+set /p SP_CHOICE=选择目标目录。输入数字或按 Enter 使用默认值:
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
 REM Parse site-packages path
@@ -205,43 +205,43 @@ echo [INFO] 路径: %PLUGIN_DIR%
 echo.
 echo [INFO] 命令 2: /plugin install rf-testing
 echo.
-echo Configure environment variables and MCP servers
+echo 配置环境变量和 MCP 服务器
 echo.
-set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:
+set /p DO_CONFIG=现在配置吗？输入 y 或 n，按 Enter 跳过:
 if /i not "%DO_CONFIG%"=="y" goto verify_install
 
 REM Collect TAPD configuration
 echo.
-echo Configure TAPD access token
-echo Get token at: https://www.tapd.cn/personal_settings/index?tab=personal_token
-set /p TAPD_TOKEN=Enter TAPD_ACCESS_TOKEN:
+echo 配置 TAPD 访问令牌
+echo 获取令牌地址: https://www.tapd.cn/personal_settings/index?tab=personal_token
+set /p TAPD_TOKEN=请输入 TAPD_ACCESS_TOKEN:
 
 if "%TAPD_TOKEN%"=="" (
-    echo [WARN] Token is empty
-    set /p SKIP_CONFIG=Skip configuration? Enter y or n:
+    echo [WARN] 令牌为空
+    set /p SKIP_CONFIG=跳过配置? 输入 y 或 n:
     if /i "%SKIP_CONFIG%"=="y" goto verify_install
 )
 
 REM Collect GitLab configuration
 echo.
-echo Configure GitLab. Optional, press Enter to skip
-echo Get token at: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
-set /p GITLAB_URL=Enter GITLAB_API_URL. Press Enter for default:
+echo 配置 GitLab（可选，按 Enter 跳过）
+echo 获取令牌地址: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
+set /p GITLAB_URL=请输入 GITLAB_API_URL（按 Enter 使用默认值）:
 if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
-set /p GITLAB_TOKEN=Enter GITLAB_TOKEN. Optional, press Enter to skip:
+set /p GITLAB_TOKEN=请输入 GITLAB_TOKEN（可选，按 Enter 跳过）:
 
 REM Write environment variables
 echo.
-echo Writing system environment variables...
+echo 写入系统环境变量...
 setx TAPD_ACCESS_TOKEN "%TAPD_TOKEN%" >nul
 setx GITLAB_API_URL "%GITLAB_URL%" >nul
 if not "%GITLAB_TOKEN%"=="" setx GITLAB_PERSONAL_ACCESS_TOKEN "%GITLAB_TOKEN%" >nul
-echo [INFO] Environment variables written
+echo [INFO] 环境变量已写入
 
 REM Create MCP configuration
 echo.
-echo Configuring Claude MCP servers...
+echo 配置 Claude MCP 服务器...
 set CLAUDE_CONFIG_DIR=%USERPROFILE%\.claude
 set MCP_FILE=%CLAUDE_CONFIG_DIR%\mcp.json
 
@@ -276,12 +276,12 @@ echo   }>> "%JSON_TEMP%"
 echo }>> "%JSON_TEMP%"
 
 move "%JSON_TEMP%" "%MCP_FILE%" >nul
-echo [INFO] MCP configuration written
+echo [INFO] MCP 配置已写入
 
 echo.
-echo Configuration complete
+echo 配置完成
 echo.
-echo [WARN] Restart terminal or Claude to take effect
+echo [WARN] 重启终端或 Claude 使配置生效
 echo.
 
 :verify_install
@@ -321,31 +321,31 @@ if exist "%PLUGIN_FILE2%" (
 echo [INFO] Verifying Python dependencies with selected Python...
 "%PYTHON_CMD%" -c "import pandas, openpyxl, robot" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python dependencies verification failed with selected Python
-    echo [INFO] Please install dependencies in the selected Python environment:
+    echo [ERROR] Python 依赖验证失败
+    echo [INFO] 请在所选 Python 环境中安装依赖：
     echo   "%PYTHON_CMD%" -m pip install pandas openpyxl robotframework
     goto failed
 )
 
-echo [INFO] Python dependencies verification passed
+echo [INFO] Python 依赖验证通过
 echo.
 
-echo Installation Complete
+echo 安装完成
 echo.
-echo Plugin path: %PLUGIN_DIR%
+echo 插件路径: %PLUGIN_DIR%
 echo.
-echo Available commands:
-echo   /rf-testing:start - Full test workflow
+echo 可用命令:
+echo   /rf-testing:start - 完整测试流程
 echo.
-echo Environment variables:
-echo   TAPD_ACCESS_TOKEN - Required
-echo   GITLAB_API_URL - Optional
-echo   GITLAB_PERSONAL_ACCESS_TOKEN - Optional
+echo 环境变量:
+echo   TAPD_ACCESS_TOKEN - 必需
+echo   GITLAB_API_URL - 可选
+echo   GITLAB_PERSONAL_ACCESS_TOKEN - 可选
 echo.
 
-echo [INFO] Installation successful
+echo [INFO] 安装成功
 exit /b 0
 
 :failed
-echo [ERROR] Installation verification failed
+echo [ERROR] 安装验证失败
 exit /b 1
