@@ -75,7 +75,27 @@ export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
 source ~/.bashrc  # 或 source ~/.zshrc
 ```
 
-### 3. 安装依赖
+### 2. 安装依赖
+
+#### 安装 uv（TAPD MCP 服务器依赖）
+
+TAPD MCP 服务器需要 `uv` 工具来运行 `mcp-server-tapd`：
+
+```bash
+# macOS
+brew install uv
+
+# Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+验证安装：
+```bash
+uvx --version
+```
 
 #### 使用安装脚本（推荐）
 
@@ -123,17 +143,71 @@ rf-testing-plugin/
 ├── 03-scripts/            # 实用脚本和资源
 │   ├── JLTestLibrary.zip  # Robot Framework 自定义测试库
 │   ├── robot2tapd.py
-│   └── batch_convert.sh
+│   ├── batch_convert.sh
+│   └── python_detector.py # Python 环境智能检测
 ├── 04-cases/              # 使用案例
 ├── 05-plugins/            # 插件目录
 │   └── rf-testing/        # rf-testing 插件
 │       ├── workflows/     # 工作流定义
 │       ├── commands/      # 入口命令
-│       ├── .mcp.json      # MCP 配置
+│       ├── .mcp.json      # MCP 配置（TAPD、GitLab）
 │       └── README.md
 ├── docs/                  # 文档
 ├── .claude-plugin/        # Plugin 元数据
 └── README.md
+```
+
+## MCP 服务器
+
+插件集成以下 MCP 服务器：
+
+### TAPD MCP 服务器
+
+**功能：**
+- **项目**：查询项目信息和配置
+- **需求**：查询需求列表、创建新需求、更新需求字段、查询需求字段配置
+- **缺陷**：查询缺陷列表、创建新缺陷、更新缺陷字段、查询缺陷字段配置
+- **迭代**：查询迭代列表
+- **评论**：业务对象添加评论
+
+**配置：**
+```json
+{
+  "mcpServers": {
+    "tapd": {
+      "command": "uvx",
+      "args": ["mcp-server-tapd"],
+      "env": {
+        "TAPD_ACCESS_TOKEN": "${TAPD_ACCESS_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+**依赖：** 需要安装 `uv` 工具（见上方安装说明）
+
+### GitLab MCP 服务器
+
+**功能：**
+- 读取仓库信息
+- 获取文件内容
+- 创建提交和合并请求
+
+**配置：**
+```json
+{
+  "mcpServers": {
+    "gitlab": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-gitlab"],
+      "env": {
+        "GITLAB_API_URL": "${GITLAB_API_URL}",
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
+  }
+}
 ```
 
 ## 使用方式
