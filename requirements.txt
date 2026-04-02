@@ -1,17 +1,69 @@
 # Python 依赖
 
+## Python 版本要求
+
+- Python 3.7.16+
+
 ## 基础依赖
+
 pandas>=2.0.0
 openpyxl>=3.1.0
 
 ## Robot Framework
+
 robotframework>=3.2.2,<4.0.0
 
-## 自定义库（可选）
-# robotframework-jljltestlibrary 是项目自定义库，包含特定业务关键字
-# 安装方式：
-#   pip install robotframework-jljltestlibrary==0.0.1.dev50+ge870d58 -U -i https://nexus.jlpay.com/repository/local-pypi/simple --trusted-host nexus.jlpay.com
-# 注意：
-#   - 具体版本号和镜像地址需要根据实际情况确认
-#   - 建议先联系运维获取正确的安装信息
-# robotframework-jljltestlibrary==0.0.1.dev50+ge870d58
+## 自定义库
+
+JLTestLibrary 是项目自定义的 Robot Framework 测试库，包含特定业务关键字。
+
+### 安装方式
+
+JLTestLibrary 以 zip 形式提供，位于项目 `03-scripts/` 目录下：
+
+```bash
+# 解压到 Python site-packages 目录
+unzip 03-scripts/JLTestLibrary.zip -d $HOME/Library/Python/3.7/site-packages/
+
+# Windows 系统
+unzip 03-scripts/JLTestLibrary.zip -d %USERPROFILE%\AppData\Local\Programs\Python\Python37\Lib\site-packages\
+```
+
+### 验证安装
+
+```bash
+python -c "import JLTestLibrary; print('JLTestLibrary 安装成功')"
+```
+
+## MCP Server 依赖（可选）
+
+如需 GitLab 支持，需安装：
+
+```bash
+pip install @modelcontextprotocol/server-gitlab
+```
+
+如需 TAPD 支持，需安装：
+
+```bash
+uvx mcp-server-tapd
+```
+
+## 安装命令
+
+```bash
+# 安装所有依赖
+pip install -r requirements.txt
+
+# 或分别安装
+pip install pandas>=2.0.0
+pip install openpyxl>=3.1.0
+pip install "robotframework>=3.2.2,<4.0.0"
+```
+
+## 注意事项
+
+1. 建议使用虚拟环境（venv 或 conda）
+2. Python 版本必须为 3.7.16 或更高
+3. JLTestLibrary 需要手动解压安装
+4. MCP Server 依赖按需安装

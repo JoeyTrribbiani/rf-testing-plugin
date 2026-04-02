@@ -6,7 +6,7 @@
 
 **架构**: 对标 AI-First 开发插件架构，采用 Mermaid flowchart 工作流编排，遵循统一交互协议和 SKILL.md 格式。
 
-**技术栈**: Python 3.10+, Claude Plugin API, Mermaid, MCP (TAPD)
+**技术栈**: Python 3.7.16+, Claude Plugin API, Mermaid, MCP (TAPD)
 
 ---
 

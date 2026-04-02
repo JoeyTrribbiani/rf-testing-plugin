@@ -4,15 +4,15 @@
 
 ### 需求
 
-TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ001`
+TAPD 需求链接：`https://www.tapd.cn/48200023/prong/stories/view/1148200023001077267`
 
 需求描述：商户支持状态变更，从正常状态变更为暂停状态，需要测试变更流程的完整性和正确性。
 
 ### 执行步骤
 
 1. 执行完整测试流程：
-   ```bash
-   /rf-test
+   ```text
+   /rf-testing:start
    ```
 
 2. 输入 TAPD 需求链接
@@ -21,7 +21,9 @@ TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ
    - 从 TAPD 拉取需求内容
    - 识别测试场景和测试点
    - 生成 RF 测试用例
+   - RF 质量保证检查
    - 检查 RF 规范
+   - 测试结果分析
    - 转换为 TAPD 格式
 
 4. 确认生成的 RF 用例符合规范
@@ -92,7 +94,7 @@ TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ
 ### 执行步骤
 
 1. 执行规范检查技能：
-   ```bash
+   ```text
    /rf-standards-check
    ```
 
@@ -140,8 +142,8 @@ TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ
 ### 执行步骤
 
 1. 执行需求转用例工作流：
-   ```bash
-   /rf-requirement-to-testcase
+   ```text
+   /rf-testing:requirement-to-rf
    ```
 
 2. 输入 TAPD 需求链接
@@ -151,6 +153,7 @@ TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ
 ### 预期输出
 
 - RF 用例文件（.robot）
+- 质量保证报告
 - 用例统计信息
 - 场景和测试点列表
 
@@ -165,8 +168,8 @@ TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ
 ### 执行步骤
 
 1. 执行 RF 转 TAPD 工作流：
-   ```bash
-   /rf-to-tapd
+   ```text
+   /rf-testing:rf-to-tapd
    ```
 
 2. 指定 RF 用例文件路径
@@ -176,6 +179,7 @@ TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ
 ### 预期输出
 
 - TAPD Excel 文件
+- 质量分析报告
 - Base64 编码文件
 - 用例数量统计
 
@@ -210,4 +214,25 @@ TAPD 需求链接：`https://tapd.example.com/workspace/48200023/requirement/REQ
 **A**: 使用 `--out-b64` 参数保存到文件：
 ```bash
 python 03-scripts/robot2tapd.py test.robot --out-b64 test.b64
+```
+
+### Q6: RF 质量保证检查是什么？
+
+**A**: RF 质量保证 Agent 会验证生成的用例是否符合 JL 企业标准，包括：
+- 变量命名（蛇形命名法：${变量名}）
+- 关键字命名（驼峰命名法：关键字名）
+- 文档格式（三段式格式：概述-前置条件-预期结果）
+- Tag 使用（优先级、评审状态）
+- JSONPath 表达式正确性
+
+### Q7: 如何配置环境变量？
+
+**A**: 设置以下环境变量：
+```bash
+# 必需
+export TAPD_ACCESS_TOKEN="your-tapd-token"
+
+# 可选（GitLab 支持）
+export GITLAB_API_URL="https://gitlab.example.com/api/v4"
+export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
 ```
