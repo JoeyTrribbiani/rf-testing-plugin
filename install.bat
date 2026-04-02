@@ -195,37 +195,37 @@ echo.
 
 :configure_mcp
 echo [INFO] ====================================
-echo [INFO] 插件已安装到本地目录
+echo [INFO] Plugin installed to local directory
 echo [INFO] ====================================
 echo.
-echo [INFO] 要让 Claude Code 识别此插件，请在 Claude Code 中执行：
+echo [INFO] To let Claude Code recognize this plugin, run in Claude Code:
 echo.
-echo [INFO] 命令 1: /plugin marketplace add
-echo [INFO] 路径: %PLUGIN_DIR%
+echo [INFO] Command 1: /plugin marketplace add
+echo [INFO] Path: %PLUGIN_DIR%
 echo.
-echo [INFO] 命令 2: /plugin install rf-testing
+echo [INFO] Command 2: /plugin install rf-testing
 echo.
-echo 配置环境变量和 MCP 服务器
+echo Configure environment variables and MCP servers
 echo.
 set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:
 if /i not "%DO_CONFIG%"=="y" goto verify_install
 
 REM Collect TAPD configuration
 echo.
-echo 配置 TAPD 访问令牌
-echo 获取令牌地址: https://www.tapd.cn/personal_settings/index?tab=personal_token
+echo Configure TAPD access token
+echo Get token at: https://www.tapd.cn/personal_settings/index?tab=personal_token
 set /p TAPD_TOKEN=Enter TAPD_ACCESS_TOKEN:
 
 if "%TAPD_TOKEN%"=="" (
-    echo [WARN] 令牌为空
+    echo [WARN] Token is empty
     set /p SKIP_CONFIG=Skip configuration? Enter y or n:
     if /i "%SKIP_CONFIG%"=="y" goto verify_install
 )
 
 REM Collect GitLab configuration
 echo.
-echo 配置 GitLab（可选，按 Enter 跳过）
-echo 获取令牌地址: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
+echo Configure GitLab. Optional, press Enter to skip
+echo Get token at: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
 set /p GITLAB_URL=Enter GITLAB_API_URL. Press Enter for default:
 if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
@@ -233,15 +233,15 @@ set /p GITLAB_TOKEN=Enter GITLAB_TOKEN. Optional, press Enter to skip:
 
 REM Write environment variables
 echo.
-echo 写入系统环境变量...
+echo Writing system environment variables...
 setx TAPD_ACCESS_TOKEN "%TAPD_TOKEN%" >nul
 setx GITLAB_API_URL "%GITLAB_URL%" >nul
 if not "%GITLAB_TOKEN%"=="" setx GITLAB_PERSONAL_ACCESS_TOKEN "%GITLAB_TOKEN%" >nul
-echo [INFO] 环境变量已写入
+echo [INFO] Environment variables written
 
 REM Create MCP configuration
 echo.
-echo 配置 Claude MCP 服务器...
+echo Configuring Claude MCP servers...
 set CLAUDE_CONFIG_DIR=%USERPROFILE%\.claude
 set MCP_FILE=%CLAUDE_CONFIG_DIR%\mcp.json
 
@@ -276,12 +276,12 @@ echo   }>> "%JSON_TEMP%"
 echo }>> "%JSON_TEMP%"
 
 move "%JSON_TEMP%" "%MCP_FILE%" >nul
-echo [INFO] MCP 配置已写入
+echo [INFO] MCP configuration written
 
 echo.
-echo 配置完成
+echo Configuration complete
 echo.
-echo [WARN] 重启终端或 Claude 使配置生效
+echo [WARN] Restart terminal or Claude to take effect
 echo.
 
 :verify_install
@@ -321,31 +321,31 @@ if exist "%PLUGIN_FILE2%" (
 echo [INFO] Verifying Python dependencies with selected Python...
 "%PYTHON_CMD%" -c "import pandas, openpyxl, robot" >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python 依赖验证失败
-    echo [INFO] 请在所选 Python 环境中安装依赖：
+    echo [ERROR] Python dependencies verification failed with selected Python
+    echo [INFO] Please install dependencies in the selected Python environment:
     echo   "%PYTHON_CMD%" -m pip install pandas openpyxl robotframework
     goto failed
 )
 
-echo [INFO] Python 依赖验证通过
+echo [INFO] Python dependencies verification passed
 echo.
 
-echo 安装完成
+echo Installation Complete
 echo.
-echo 插件路径: %PLUGIN_DIR%
+echo Plugin path: %PLUGIN_DIR%
 echo.
-echo 可用命令:
-echo   /rf-testing:start - 完整测试流程
+echo Available commands:
+echo   /rf-testing:start - Full test workflow
 echo.
-echo 环境变量:
-echo   TAPD_ACCESS_TOKEN - 必需
-echo   GITLAB_API_URL - 可选
-echo   GITLAB_PERSONAL_ACCESS_TOKEN - 可选
+echo Environment variables:
+echo   TAPD_ACCESS_TOKEN - Required
+echo   GITLAB_API_URL - Optional
+echo   GITLAB_PERSONAL_ACCESS_TOKEN - Optional
 echo.
 
-echo [INFO] 安装成功
+echo [INFO] Installation successful
 exit /b 0
 
 :failed
-echo [ERROR] 安装验证失败
+echo [ERROR] Installation verification failed
 exit /b 1
