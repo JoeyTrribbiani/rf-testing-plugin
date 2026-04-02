@@ -131,23 +131,6 @@ if errorlevel 1 (
     echo [INFO] robotframework is already installed
 )
 
-REM Install MCP dependencies
-"%PIP_CMD%" show mcp >nul 2>&1
-if errorlevel 1 (
-    echo [INFO] Installing mcp...
-    "%PIP_CMD%" install "mcp>=0.9.0"
-) else (
-    echo [INFO] mcp is already installed
-)
-
-"%PIP_CMD%" show requests >nul 2>&1
-if errorlevel 1 (
-    echo [INFO] Installing requests...
-    "%PIP_CMD%" install "requests>=2.31.0"
-) else (
-    echo [INFO] requests is already installed
-)
-
 echo [INFO] Python dependencies installed
 echo.
 

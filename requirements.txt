@@ -15,8 +15,23 @@ robotframework>=3.2.2,<4.0.0
 
 ## MCP Server 依赖
 
-mcp>=0.9.0
-requests>=2.31.0
+如需 TAPD 支持，需安装：
+```bash
+# 安装 uv（推荐方式）
+# macOS
+brew install uv
+
+# Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+如需 GitLab 支持，需安装：
+```bash
+npm install -g @modelcontextprotocol/server-gitlab
+```
 
 ## 自定义库
 
@@ -43,15 +58,13 @@ python -c "import JLTestLibrary; print('JLTestLibrary 安装成功')"
 ## 安装命令
 
 ```bash
-# 安装所有依赖
+# 安装所有 Python 依赖
 pip install -r requirements.txt
 
 # 或分别安装
 pip install pandas>=2.0.0
 pip install openpyxl>=3.1.0
 pip install "robotframework>=3.2.2,<4.0.0"
-pip install "mcp>=0.9.0"
-pip install "requests>=2.31.0"
 ```
 
 ## 注意事项
@@ -59,4 +72,5 @@ pip install "requests>=2.31.0"
 1. 建议使用虚拟环境（venv 或 conda）
 2. Python 版本必须为 3.7.16 或更高
 3. JLTestLibrary 需要手动解压安装
-4. MCP Server 依赖需要安装 mcp 包
+4. MCP Server TAPD 需要 uvx（通过 uv 安装）
+5. MCP Server GitLab 需要 npm

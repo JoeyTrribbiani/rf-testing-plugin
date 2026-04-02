@@ -1,13 +1,10 @@
 {
   "mcpServers": {
     "tapd": {
-      "type": "stdio",
-      "command": "python",
-      "args": ["${PLUGIN_DIR}/../../03-scripts/tapd-mcp-server.py"],
+      "command": "uvx",
+      "args": ["mcp-server-tapd"],
       "env": {
-        "TAPD_ACCESS_TOKEN": "${TAPD_ACCESS_TOKEN}",
-        "TAPD_API_BASE_URL": "https://api.tapd.cn",
-        "TAPD_BASE_URL": "https://www.tapd.cn"
+        "TAPD_ACCESS_TOKEN": "${TAPD_ACCESS_TOKEN}"
       }
     },
     "gitlab": {
