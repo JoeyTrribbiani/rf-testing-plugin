@@ -1,8 +1,4 @@
 @echo off
-chcp 65001 >nul
-REM RF Testing Plugin one-click installation script (Windows)
-REM Purpose: Automatically install and configure rf-testing-plugin
-
 setlocal enabledelayedexpansion
 
 REM Plugin configuration
@@ -16,14 +12,14 @@ echo.
 REM Check Python
 where python >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python is not installed, please install Python 3.7.16+ first
+    echo [ERROR] Python is not installed
     exit /b 1
 )
 
 REM Check git
 where git >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] git is not installed, please install git first
+    echo [ERROR] git is not installed
     exit /b 1
 )
 
@@ -31,8 +27,8 @@ REM Clone plugin repository
 echo [INFO] Cloning plugin repository...
 
 if exist "%PLUGIN_DIR%" (
-    echo [WARN] Plugin directory already exists: %PLUGIN_DIR%
-    set /p REPLY=Delete and re-clone (y/n):
+    echo [WARN] Plugin directory already exists
+    set /p REPLY=Delete and re-clone? Enter y or n:
     if /i "!REPLY!"=="y" (
         rmdir /s /q "%PLUGIN_DIR%"
     ) else (
@@ -47,18 +43,17 @@ if not exist "%USERPROFILE%\.claude\plugins\" (
 
 git clone "%PLUGIN_REPO%" "%PLUGIN_DIR%"
 if errorlevel 1 (
-    echo [ERROR] Clone failed, please check network connection and repository URL
+    echo [ERROR] Clone failed
     exit /b 1
 )
 
-echo [INFO] Plugin cloned: %PLUGIN_DIR%
+echo [INFO] Plugin cloned
 echo.
 
 :detect_python
 REM Detect Python environment
 echo [INFO] Detecting Python environment...
 
-REM Call Python detection module
 python "%PLUGIN_DIR%\03-scripts\python_detector.py" --format json > "%TEMP%\env_detection.json" 2>nul
 
 if errorlevel 1 (
@@ -69,17 +64,14 @@ if errorlevel 1 (
     goto install_deps
 )
 
-REM Show detection results
 echo.
 python "%PLUGIN_DIR%\03-scripts\python_detector.py"
 echo.
 
-REM Get user choice
-set /p PYTHON_CHOICE=Select target Python environment, press Enter for default=1:
+set /p PYTHON_CHOICE=Select Python environment. Enter number or press Enter for default:
 if "%PYTHON_CHOICE%"=="" set PYTHON_CHOICE=1
 
-REM Parse selected Python path
-for /f "tokens=*" %%p in ('python -c "import json; data=json.load(open(r'%TEMP%\env_detection.json', encoding='utf-8')); print(data[%PYTHON_CHOICE% - 1]['python_path'] if len(data) >= %PYTHON_CHOICE% else '')"') do set SELECTED_PYTHON=%%p
+for /f "tokens=*" %%p in ('python -c "import json; data=json.load(open(r''%TEMP%\env_detection.json'', encoding=''utf-8'')); print(data[%PYTHON_CHOICE% - 1][''python_path''] if len(data) >= %PYTHON_CHOICE% else '''')"') do set SELECTED_PYTHON=%%p
 
 if "%SELECTED_PYTHON%"=="" (
     echo [ERROR] Invalid selection
@@ -89,23 +81,20 @@ if "%SELECTED_PYTHON%"=="" (
     goto install_deps
 )
 
-REM Get version info
-for /f "tokens=*" %%v in ('python -c "import json; data=json.load(open(r'%TEMP%\env_detection.json', encoding='utf-8')); print(data[%PYTHON_CHOICE% - 1]['version'])"') do set PYTHON_VERSION=%%v
+for /f "tokens=*" %%v in ('python -c "import json; data=json.load(open(r''%TEMP%\env_detection.json'', encoding=''utf-8'')); print(data[%PYTHON_CHOICE% - 1][''version''])"') do set PYTHON_VERSION=%%v
 
 echo [INFO] Selected: Python %PYTHON_VERSION%
 echo [INFO] Path: %SELECTED_PYTHON%
 echo.
 
-REM Set Python and pip commands
 set PYTHON_CMD=%SELECTED_PYTHON%
-for /f "tokens=*" %%i in ('python -c "import os; print(os.path.join(os.path.dirname(r'%SELECTED_PYTHON%'), 'pip'))"') do set PIP_CMD=%%i
+for /f "tokens=*" %%i in ('python -c "import os; print(os.path.join(os.path.dirname(r''%SELECTED_PYTHON%''), ''pip''))"') do set PIP_CMD=%%i
 if not exist "%PIP_CMD%" set PIP_CMD=pip
 
 :install_deps
 REM Install Python dependencies
 echo [INFO] Installing Python dependencies...
 
-REM Check pandas
 "%PIP_CMD%" show pandas >nul 2>&1
 if errorlevel 1 (
     echo [INFO] Installing pandas...
@@ -114,7 +103,6 @@ if errorlevel 1 (
     echo [INFO] pandas is already installed
 )
 
-REM Check openpyxl
 "%PIP_CMD%" show openpyxl >nul 2>&1
 if errorlevel 1 (
     echo [INFO] Installing openpyxl...
@@ -123,7 +111,6 @@ if errorlevel 1 (
     echo [INFO] openpyxl is already installed
 )
 
-REM Check robotframework
 "%PIP_CMD%" show robotframework >nul 2>&1
 if errorlevel 1 (
     echo [INFO] Installing robotframework...
@@ -145,47 +132,41 @@ if not exist "%JL_LIBRARY%" (
     goto configure_mcp
 )
 
-REM Detect site-packages directory
 echo [INFO] Detecting site-packages directory...
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --format json > "%TEMP%\site_packages.json" 2>nul
 
 if errorlevel 1 (
-    echo [WARN] Cannot detect site-packages directory automatically, skip installation
+    echo [WARN] Cannot detect site-packages directory, skip installation
     goto configure_mcp
 )
 
-REM Show options
 echo.
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages
 echo.
 
-set /p SP_CHOICE=Select target directory, press Enter for default=1:
+set /p SP_CHOICE=Select target directory. Enter number or press Enter for default:
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
-REM Parse path
-for /f "tokens=*" %%p in ('python -c "import json; data=json.load(open(r'%TEMP%\site_packages.json', encoding='utf-8')); print(data['site_packages'][%SP_CHOICE% - 1])"') do set TARGET_DIR=%%p
+for /f "tokens=*" %%p in ('python -c "import json; data=json.load(open(r''%TEMP%\site_packages.json'', encoding=''utf-8'')); print(data[''site_packages''][%SP_CHOICE% - 1])"') do set TARGET_DIR=%%p
 
 if "%TARGET_DIR%"=="" (
     echo [WARN] Invalid selection, skip installation
     goto configure_mcp
 )
 
-REM Check if already installed
 if exist "%TARGET_DIR%\JLTestLibrary" (
     echo [WARN] JLTestLibrary already exists, skip installation
     goto configure_mcp
 )
 
-REM Extract
 echo [INFO] Extracting to: %TARGET_DIR%
 powershell -Command "Expand-Archive -Path '%JL_LIBRARY%' -DestinationPath '%TARGET_DIR%' -Force" 2>nul
 
 if errorlevel 1 (
-    echo [WARN] Extraction failed, please check permissions
+    echo [WARN] Extraction failed, check permissions
     goto configure_mcp
 )
 
-REM Verify
 "%PYTHON_CMD%" -c "import JLTestLibrary" >nul 2>&1
 if errorlevel 1 (
     echo [WARN] Verification failed
@@ -196,8 +177,7 @@ if errorlevel 1 (
 echo.
 
 :configure_mcp
-REM Configure Claude Skills (deprecated, use marketplace)
-echo [INFO] Note: New version recommends installing via marketplace
+echo [INFO] Note: Recommend installing via marketplace
 echo [INFO] Run in Claude Code:
 echo   /plugin marketplace add .
 echo   /plugin install rf-testing
@@ -205,55 +185,48 @@ echo.
 
 REM Configure environment variables and MCP
 echo.
-echo ========================================
-echo   Configure environment variables and MCP servers
-echo ========================================
+echo Configure environment variables and MCP servers
 echo.
-set /p DO_CONFIG=Configure environment variables and MCP servers now (y/n):
+set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:
 if /i not "%DO_CONFIG%"=="y" goto verify_install
 
 REM Collect TAPD configuration
 echo.
-echo [1/4] Configure TAPD access token
-echo ----------------------------------------
+echo Configure TAPD access token
 echo Get token at: https://www.tapd.cn/personal_settings/index?tab=personal_token
 set /p TAPD_TOKEN=Enter TAPD_ACCESS_TOKEN:
 
 if "%TAPD_TOKEN%"=="" (
-    echo [WARN] TAPD_ACCESS_TOKEN cannot be empty
-    echo [WARN] You can configure manually later, skip this step
-    set /p SKIP_CONFIG=Skip configuration (y/n):
+    echo [WARN] Token is empty
+    set /p SKIP_CONFIG=Skip configuration? Enter y or n:
     if /i "%SKIP_CONFIG%"=="y" goto verify_install
 )
 
-REM Collect GitLab configuration (optional)
+REM Collect GitLab configuration
 echo.
-echo [2/4] Configure GitLab (optional, press Enter to skip)
-echo ----------------------------------------
-echo Get token at: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens?name=rf-testing-plugin&scopes=api%2Cread_user
-set /p GITLAB_URL=Enter GITLAB_API_URL, press Enter for default=:
+echo Configure GitLab. Optional, press Enter to skip
+echo Get token at: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
+set /p GITLAB_URL=Enter GITLAB_API_URL. Press Enter for default:
 if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
-set /p GITLAB_TOKEN=Enter GITLAB_PERSONAL_ACCESS_TOKEN, optional press Enter to skip:
+set /p GITLAB_TOKEN=Enter GITLAB_TOKEN. Optional, press Enter to skip:
 
-REM Write environment variables (user level)
+REM Write environment variables
 echo.
-echo [3/4] Write system environment variables...
+echo Writing system environment variables...
 setx TAPD_ACCESS_TOKEN "%TAPD_TOKEN%" >nul
 setx GITLAB_API_URL "%GITLAB_URL%" >nul
 if not "%GITLAB_TOKEN%"=="" setx GITLAB_PERSONAL_ACCESS_TOKEN "%GITLAB_TOKEN%" >nul
-echo [INFO] Environment variables written to system
+echo [INFO] Environment variables written
 
 REM Create MCP configuration
 echo.
-echo [4/4] Configure Claude MCP servers...
+echo Configuring Claude MCP servers...
 set CLAUDE_CONFIG_DIR=%USERPROFILE%\.claude
 set MCP_FILE=%CLAUDE_CONFIG_DIR%\mcp.json
 
-REM Create directory
 if not exist "%CLAUDE_CONFIG_DIR%" mkdir "%CLAUDE_CONFIG_DIR%"
 
-REM Build JSON configuration (using temporary file)
 set JSON_TEMP=%TEMP%\mcp_config.json
 
 echo {> "%JSON_TEMP%"
@@ -283,42 +256,34 @@ echo   }>> "%JSON_TEMP%"
 echo }>> "%JSON_TEMP%"
 
 move "%JSON_TEMP%" "%MCP_FILE%" >nul
-echo [INFO] MCP configuration written: %MCP_FILE%
+echo [INFO] MCP configuration written
 
 echo.
-echo ========================================
-echo [Verify] Configuration complete
-echo ========================================
+echo Configuration complete
 echo.
-echo [INFO] Environment variables written to system
-echo [INFO] MCP configuration written: %MCP_FILE%
-echo.
-echo [WARN] Need to restart terminal or Claude to take effect
+echo [WARN] Restart terminal or Claude to take effect
 echo.
 
 :verify_install
-REM Verify installation
 echo [INFO] Verifying installation...
 
 if not exist "%PLUGIN_DIR%" (
-    echo [ERROR] Plugin directory does not exist: %PLUGIN_DIR%
+    echo [ERROR] Plugin directory not found
     goto failed
 )
 
-REM Check plugin files
 set PLUGIN_FILES[0]=%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json
 set PLUGIN_FILES[1]=%PLUGIN_DIR%\05-plugins\rf-testing\.claude-plugin\plugin.json
 set PLUGIN_FILES[2]=%PLUGIN_DIR%\05-plugins\rf-testing\commands\start.md
 
 for /L %%i in (0,1,2) do (
     if exist "!PLUGIN_FILES[%%i]!" (
-        echo [INFO] Plugin file exists: %%~nxi!PLUGIN_FILES[%%i]!
+        echo [INFO] File exists: %%~nxi!PLUGIN_FILES[%%i]!
     ) else (
-        echo [WARN] Plugin file not found: !PLUGIN_FILES[%%i]!
+        echo [WARN] File not found: !PLUGIN_FILES[%%i]!
     )
 )
 
-REM Check Python dependencies (using detected Python)
 "%PYTHON_CMD%" -c "import pandas, openpyxl, robotframework" >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python dependencies verification failed
@@ -328,46 +293,22 @@ if errorlevel 1 (
 echo [INFO] Python dependencies verification passed
 echo.
 
-REM Print usage
-echo ==================================
-echo   Installation Complete!
-echo ==================================
+echo Installation Complete
 echo.
 echo Plugin path: %PLUGIN_DIR%
 echo.
-echo Recommended installation (marketplace):
-echo   1. Enter plugin directory:
-echo      cd %PLUGIN_DIR%
-echo   2. Run in Claude Code:
-echo      /plugin marketplace add .
-echo      /plugin install rf-testing
-echo.
 echo Available commands:
-echo   /rf-testing:start [tapd-link]  - Full test workflow
-echo.
-echo Sub-workflows:
-echo   /rf-testing:requirement-to-rf  - Requirement to test cases only
-echo   /rf-testing:rf-to-tapd       - RF to TAPD only
+echo   /rf-testing:start - Full test workflow
 echo.
 echo Environment variables:
-echo   TAPD_ACCESS_TOKEN=your-tapd-token (required)
-echo   GITLAB_API_URL=https://gitlab.example.com/api/v4 (optional)
-echo   GITLAB_PERSONAL_ACCESS_TOKEN=your-gitlab-token (optional)
-echo.
-echo Usage:
-echo   1. Configure environment variables
-echo   2. Restart Claude Code
-echo   3. Run: /rf-testing:start
-echo.
-echo Notes:
-echo   - Ensure TAPD_ACCESS_TOKEN is configured
-echo   - First run requires TAPD requirement link
-echo   - RF quality assurance Agent automatically checks case quality
+echo   TAPD_ACCESS_TOKEN - Required
+echo   GITLAB_API_URL - Optional
+echo   GITLAB_PERSONAL_ACCESS_TOKEN - Optional
 echo.
 
-echo [INFO] Installation successful!
+echo [INFO] Installation successful
 exit /b 0
 
 :failed
-echo [ERROR] Installation verification failed, please check above errors
+echo [ERROR] Installation verification failed
 exit /b 1
