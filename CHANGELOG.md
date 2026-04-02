@@ -7,25 +7,38 @@
 
 ## [2.2.0] - 2026-04-02
 
-### 新增（Added）
-
-- 新增自实现 TAPD MCP 服务器 `03-scripts/tapd-mcp-server.py`
-  - 使用 Python 实现的 stdio transport MCP 服务器
-  - 无需 uvx 依赖，降低安装复杂度
-  - 提供工具接口：
-    - `get_requirement`: 获取 TAPD 需求详情
-    - `get_test_cases`: 获取需求关联的测试用例列表
-    - `create_test_case`: 创建新的测试用例
-    - `update_test_case`: 更新测试用例
-    - `search_stories`: 搜索工作空间中的需求
-    - `parse_tapd_url`: 解析 TAPD URL 提取 workspace_id 和 story_id
-
 ### 变更（Changed）
 
-- 更新 `.mcp.json` 配置，使用本地 Python MCP 服务器替代 uvx mcp-server-tapd
-- 更新 `requirements.txt`，添加 `mcp>=0.9.0` 和 `requests>=2.31.0` 依赖
-- 更新 `install.sh`，自动安装 MCP 相关依赖
-- 更新 `install.bat`，自动安装 MCP 相关依赖
+- 更新 `.mcp.json` 配置，使用官方 `mcp-server-tapd` 包（通过 uvx 运行）
+- 删除自定义 TAPD MCP 服务器实现
+- 更新 `requirements.txt`，添加 uv 安装说明
+
+### 删除（Removed）
+
+- 删除 `03-scripts/tapd-mcp-server.py` 自定义 MCP 服务器
+
+### TAPD MCP 功能
+
+官方 `mcp-server-tapd` 支持的功能：
+- **项目**：查询项目信息和配置
+- **需求**：查询需求列表、创建新需求、更新需求字段、查询需求字段配置
+- **缺陷**：查询缺陷列表、创建新缺陷、更新缺陷字段、查询缺陷字段配置
+- **迭代**：查询迭代列表
+- **评论**：业务对象添加评论
+
+### 安装要求
+
+- TAPD MCP 服务器需要 `uvx`（通过 uv 安装）
+  ```bash
+  # macOS
+  brew install uv
+
+  # Linux
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+
+  # Windows
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
 
 ---
 
