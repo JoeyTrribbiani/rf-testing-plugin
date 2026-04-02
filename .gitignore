@@ -1,6 +1,5 @@
 # Claude 配置文件（应保持本地）
 .claude/
-.claude-plugin/
 
 # 验证报告
 VERIFICATION_REPORT.md

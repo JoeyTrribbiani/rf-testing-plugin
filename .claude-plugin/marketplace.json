@@ -1,0 +1,29 @@
+{
+  "name": "rf-testing-plugin",
+  "owner": {
+    "name": "JoeyTrribbiani"
+  },
+  "metadata": {
+    "description": "Robot Framework 测试用例生成与转换插件，对标开发工作流提供测试工程师视角能力。",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "rf-testing",
+      "source": "./05-plugins/rf-testing",
+      "description": "基于 TAPD 需求的 Robot Framework 测试用例生成与转换插件，提供完整测试工作流。",
+      "version": "1.0.0",
+      "author": {
+        "name": "JoeyTrribbiani"
+      },
+      "category": "testing",
+      "tags": [
+        "robotframework",
+        "tapd",
+        "gitlab",
+        "test-automation",
+        "workflow"
+      ]
+    }
+  ]
+}

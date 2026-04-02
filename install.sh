@@ -134,7 +134,7 @@ install_jltestlibrary() {
 
     # 获取 site-packages 列表
     local sp_output
-    sp_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --format json 2>/dev/null)
+    sp_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --format json --python-path "$PYTHON_CMD" 2>/dev/null)
 
     if [ $? -ne 0 ]; then
         log_warn "无法自动检测 site-packages 目录，请手动安装"
@@ -145,7 +145,7 @@ install_jltestlibrary() {
 
     # 显示 site-packages 选项
     echo ""
-    python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages 2>/dev/null | tail -n +2
+    python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --python-path "$PYTHON_CMD"
     echo ""
 
     # 获取用户选择
