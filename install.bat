@@ -195,12 +195,15 @@ if errorlevel 1 (
 echo.
 
 :configure_mcp
-echo [INFO] Note: Recommend installing via marketplace
-echo [INFO] Run in Claude Code:
-echo   /plugin marketplace add .
+echo [INFO] ====================================
+echo [INFO] 插件已安装到本地目录
+echo [INFO] ====================================
+echo.
+echo [INFO] 要让 Claude Code 识别此插件，请在 Claude Code 中执行：
+echo.
+echo   /plugin marketplace add %PLUGIN_DIR%
 echo   /plugin install rf-testing
 echo.
-
 echo Configure environment variables and MCP servers
 echo.
 set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:

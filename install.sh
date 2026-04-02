@@ -232,12 +232,17 @@ clone_plugin() {
     log_info "插件克隆完成: $PLUGIN_DIR"
 }
 
-# 配置插件（已弃用，使用 marketplace）
+# 配置插件（提示 marketplace 安装）
 configure_plugin() {
-    log_info "提示：新版本推荐通过 marketplace 安装插件"
-    log_info "在 Claude Code 中执行："
-    log_info "  /plugin marketplace add ."
+    log_info "===================================="
+    log_info "插件已安装到本地目录"
+    log_info "===================================="
+    log_info ""
+    log_info "要让 Claude Code 识别此插件，请在 Claude Code 中执行："
+    log_info ""
+    log_info "  /plugin marketplace add $PLUGIN_DIR"
     log_info "  /plugin install rf-testing"
+    log_info ""
 }
 
 # 一键配置环境变量和 MCP
