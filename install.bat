@@ -28,7 +28,7 @@ echo [INFO] Cloning plugin repository...
 if exist "%PLUGIN_DIR%" (
     echo [WARN] Plugin directory already exists
     set /p REPLY=Delete and re-clone? Enter y or n:
-    if /i "!REPLY!"=="y" (
+    if /i "%REPLY%"=="y" (
         rmdir /s /q "%PLUGIN_DIR%"
     ) else (
         echo [INFO] Skip cloning step
