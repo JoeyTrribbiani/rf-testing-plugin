@@ -1,10 +1,13 @@
 {
   "mcpServers": {
     "tapd": {
-      "command": "uvx",
-      "args": ["mcp-server-tapd"],
+      "command": "mcp-server-tapd",
+      "args": ["--mode", "stdio"],
       "env": {
-        "TAPD_ACCESS_TOKEN": "${TAPD_ACCESS_TOKEN}"
+        "TAPD_ACCESS_TOKEN": "${TAPD_ACCESS_TOKEN}",
+        "TAPD_API_BASE_URL": "https://api.tapd.cn",
+        "TAPD_BASE_URL": "https://www.tapd.cn",
+        "BOT_URL": ""
       }
     },
     "gitlab": {
