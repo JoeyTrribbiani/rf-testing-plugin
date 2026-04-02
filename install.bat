@@ -1,5 +1,4 @@
 @echo off
-setlocal enabledelayedexpansion
 
 REM Plugin configuration
 set PLUGIN_NAME=rf-testing-plugin
@@ -201,11 +200,11 @@ echo [INFO] ====================================
 echo.
 echo [INFO] 要让 Claude Code 识别此插件，请在 Claude Code 中执行：
 echo.
-setlocal enabledelayedexpansion
-echo   /plugin marketplace add !PLUGIN_DIR!
-echo   /plugin install rf-testing
+echo [INFO] 命令 1: /plugin marketplace add
+echo [INFO] 路径: %PLUGIN_DIR%
 echo.
-endlocal
+echo [INFO] 命令 2: /plugin install rf-testing
+echo.
 echo Configure environment variables and MCP servers
 echo.
 set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:
