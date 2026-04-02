@@ -18,7 +18,7 @@
 通过 marketplace 安装插件：
 
 ```text
-/plugin marketplace add .
+/plugin marketplace add %USERPROFILE%\.claude\plugins\rf-testing-plugin
 /plugin install rf-testing
 ```
 
