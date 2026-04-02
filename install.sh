@@ -123,6 +123,25 @@ install_python_deps() {
         }
     fi
 
+    # 安装 MCP 依赖（TAPD MCP 服务器）
+    if "$PIP_CMD" show "mcp" &> /dev/null; then
+        log_info "mcp 已安装"
+    else
+        log_info "安装 mcp..."
+        "$PIP_CMD" install "mcp>=0.9.0" || {
+            log_warn "安装 mcp 失败，TAPD MCP 服务器可能无法工作"
+        }
+    fi
+
+    if "$PIP_CMD" show "requests" &> /dev/null; then
+        log_info "requests 已安装"
+    else
+        log_info "安装 requests..."
+        "$PIP_CMD" install "requests>=2.31.0" || {
+            log_warn "安装 requests 失败，TAPD MCP 服务器可能无法工作"
+        }
+    fi
+
     log_info "Python 依赖安装完成"
 }
 
