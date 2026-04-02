@@ -201,9 +201,11 @@ echo [INFO] ====================================
 echo.
 echo [INFO] 要让 Claude Code 识别此插件，请在 Claude Code 中执行：
 echo.
-echo   /plugin marketplace add %PLUGIN_DIR%
+setlocal enabledelayedexpansion
+echo   /plugin marketplace add !PLUGIN_DIR!
 echo   /plugin install rf-testing
 echo.
+endlocal
 echo Configure environment variables and MCP servers
 echo.
 set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:
