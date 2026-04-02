@@ -27,16 +27,13 @@ echo [INFO] Cloning plugin repository...
 
 if exist "%PLUGIN_DIR%" (
     echo [WARN] Plugin directory already exists
-    set /p REPLY=Delete and re-clone? Enter y or n:
-    echo REPLY: "%REPLY%"
-    if /i "%REPLY%"=="y" (
-        echo [INFO] Deleting existing directory...
-        rmdir /s /q "%PLUGIN_DIR%"
-        echo [INFO] Directory deleted
-    ) else (
+    choice /C YN /M "Delete and re-clone (Y/N)"
+    if errorlevel 2 (
         echo [INFO] Skip cloning step
         goto detect_python
     )
+    echo [INFO] Deleting existing directory...
+    rmdir /s /q "%PLUGIN_DIR%"
 )
 
 if exist "%PLUGIN_DIR%" (
