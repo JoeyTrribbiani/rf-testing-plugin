@@ -139,7 +139,7 @@ if not exist "%JL_LIBRARY%" (
 )
 
 echo [INFO] Detecting site-packages directory...
-"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --format json > "%TEMP%\site_packages.json" 2>nul
+"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --format json --python-path "%PYTHON_CMD%" > "%TEMP%\site_packages.json" 2>nul
 
 if errorlevel 1 (
     echo [WARN] Cannot detect site-packages directory, skip installation
@@ -147,7 +147,7 @@ if errorlevel 1 (
 )
 
 echo.
-"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages
+"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --python-path "%PYTHON_CMD%"
 echo.
 
 set /p SP_CHOICE=Select target directory. Enter number or press Enter for default:

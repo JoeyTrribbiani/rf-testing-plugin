@@ -522,6 +522,8 @@ def main():
                        help="输出格式")
     parser.add_argument("--site-packages", action="store_true",
                        help="检测 site-packages 目录")
+    parser.add_argument("--python-path", type=str,
+                       help="指定要检测 site-packages 的 Python 路径")
 
     args = parser.parse_args()
 
@@ -536,13 +538,19 @@ def main():
             print(display_environments(envs))
 
         # 检测 site-packages
-        if args.site_packages and envs:
-            paths = get_site_packages_paths(envs[0].python_path)
-            jl_installed = [
-                os.path.exists(os.path.join(p, "JLTestLibrary")) for p in paths
-            ]
-            print()
-            print(display_site_packages(paths, jl_installed))
+        if args.site_packages:
+            # 如果指定了 python-path，使用它；否则使用第一个环境
+            target_python = args.python_path
+            if not target_python and envs:
+                target_python = envs[0].python_path
+
+            if target_python:
+                paths = get_site_packages_paths(target_python)
+                jl_installed = [
+                    os.path.exists(os.path.join(p, "JLTestLibrary")) for p in paths
+                ]
+                print()
+                print(display_site_packages(paths, jl_installed))
 
     except PythonDetectionError as e:
         print(f"错误: {e}", file=sys.stderr)
