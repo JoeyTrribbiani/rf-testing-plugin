@@ -104,8 +104,13 @@ def get_python_version(python_path: str) -> Optional[Tuple[int, int, int]]:
             text=True,
             timeout=5
         )
+        # 检查命令是否成功
+        if result.returncode != 0:
+            return None
         # 版本信息在 stderr
-        version_string = result.stderr.strip() or result.stdout.strip()
+        version_string = (result.stderr or "").strip() or (result.stdout or "").strip()
+        if not version_string:
+            return None
         return parse_python_version(version_string)
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         return None
