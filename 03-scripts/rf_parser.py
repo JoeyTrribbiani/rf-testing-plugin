@@ -5,7 +5,6 @@ Robot Framework 结果解析模块
 """
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Any
-from datetime import datetime
 
 
 def parse_robot_output(output_file: str) -> Dict[str, Any]:

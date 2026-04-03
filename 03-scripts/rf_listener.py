@@ -5,7 +5,6 @@ Robot Framework 事件监听器
 """
 import sys
 from typing import Any, Dict
-from datetime import datetime
 
 
 class RFListener:
@@ -23,7 +22,6 @@ class RFListener:
         self.pass_count = 0
         self.fail_count = 0
         self.skip_count = 0
-        self.start_time = None
 
     def start_suite(self, name: str, attrs: Dict[str, Any]) -> None:
         """测试套件开始"""

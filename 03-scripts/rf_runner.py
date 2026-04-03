@@ -19,16 +19,16 @@ from python_detector import detect_python_environments
 
 def build_robot_command(
     robot_file: str,
-    python_path: str = None,
-    test_name: str = None,
-    suite_name: str = None,
-    include_tags: List[str] = None,
-    exclude_tags: List[str] = None,
-    variables: List[str] = None,
-    variable_file: str = None,
+    python_path: Optional[str] = None,
+    test_name: Optional[str] = None,
+    suite_name: Optional[str] = None,
+    include_tags: Optional[List[str]] = None,
+    exclude_tags: Optional[List[str]] = None,
+    variables: Optional[List[str]] = None,
+    variable_file: Optional[str] = None,
     output_dir: str = "./output",
     log_level: str = "INFO",
-    listener: str = None
+    listener: Optional[str] = None
 ) -> List[str]:
     """
     构建 robot 命令
