@@ -17,17 +17,25 @@ flowchart TD
         skill_points[[Skill: 识别测试点]]
     end
 
+    subgraph 阶段2_5["阶段2.5: YAPI 接口文档"]
+        mcp_yapi[[MCP: 从 YAPI 获取接口文档]]
+    end
+
     subgraph 阶段3["阶段3: 用例生成"]
         skill_generation[[Skill: 生成 RF 用例]]
         agent_rf_qa[[Agent: RF 质量保证检查]]
         skill_validation[[Skill: 检查 RF 规范]]
     end
 
-    subgraph 阶段4["阶段4: 结果分析"]
+    subgraph 阶段5["阶段5: 执行测试"]
+        script_execute[[Script: 执行 RF 测试用例]]
+    end
+
+    subgraph 阶段6["阶段6: 结果分析"]
         agent_results[[Agent: 测试结果分析]]
     end
 
-    subgraph 阶段5["阶段5: TAPD 转换"]
+    subgraph 阶段7["阶段7: TAPD 转换"]
         skill_conversion[[Skill: RF 转 TAPD]]
         mcp_export[[MCP: 导出测试用例到 TAPD]]
     end
@@ -35,10 +43,12 @@ flowchart TD
     start_node --> mcp_fetch
     mcp_fetch --> skill_scenario
     skill_scenario --> skill_points
-    skill_points --> skill_generation
+    skill_points --> mcp_yapi
+    mcp_yapi --> skill_generation
     skill_generation --> agent_rf_qa
     agent_rf_qa --> skill_validation
-    skill_validation --> agent_results
+    skill_validation --> script_execute
+    script_execute --> agent_results
     agent_results --> skill_conversion
     skill_conversion --> mcp_export
     mcp_export --> end_node
@@ -46,12 +56,14 @@ flowchart TD
     style start_node fill:#90EE90
     style end_node fill:#FFB6C1
     style mcp_fetch fill:#87CEEB
+    style mcp_yapi fill:#87CEEB
     style mcp_export fill:#87CEEB
     style skill_scenario fill:#FFE4B5
     style skill_points fill:#FFE4B5
     style skill_generation fill:#FFE4B5
     style agent_rf_qa fill:#98FB98
     style skill_validation fill:#FFE4B5
+    style script_execute fill:#DDA0DD
     style agent_results fill:#98FB98
     style skill_conversion fill:#FFE4B5
 ```
@@ -98,6 +110,25 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd
 
 Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
 
+#### mcp_yapi(MCP 自动选择) - AI 工具选择模式
+
+<!-- MCP_NODE_METADATA: {"mode":"aiToolSelection","serverId":"yapi-auto-mcp","userIntent":"根据需求中的接口名称，从 YAPI 获取接口文档。\n提取接口的请求参数、响应格式、示例数据等。"} -->
+
+**MCP 服务器**: yapi-auto-mcp
+
+**验证状态**: 有效
+
+**用户意图（自然语言任务描述）**:
+
+```
+根据需求中的接口名称，从 YAPI 获取接口文档。
+提取接口的请求参数、响应格式、示例数据等。
+```
+
+**执行方法**:
+
+Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "yapi-auto-mcp" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
+
 ### 技能节点
 
 #### skill_scenario(识别测试场景)
@@ -139,18 +170,40 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd
 - **职责**: 分析 RF 测试执行结果，识别失败模式、趋势和系统性质量问题
 - **输出**: 质量报告和改进建议
 
+### 脚本节点
+
+#### script_execute(执行 RF 测试用例)
+
+- **脚本**: `03-scripts/rf_executor.py`
+- **函数**: `execute_robot_test()`
+- **职责**: 执行生成的 RF 测试用例，返回执行结果
+- **参数**:
+  - `robot_file`: .robot 文件路径
+  - `python_path`: Python 环境路径（可选，自动检测）
+  - `test_name`: 执行指定测试用例（可选）
+  - `suite_name`: 执行指定测试套件（可选）
+  - `output_dir`: 输出目录（默认: ./output）
+- **返回值**:
+  - `success`: 执行是否成功
+  - `statistics`: 统计信息（总数/通过/失败/跳过）
+  - `tests`: 测试用例列表
+  - `log_file`: HTML 日志文件路径
+  - `report_file`: HTML 报告文件路径
+
 ## 工作流说明
 
 ### 执行流程
 
 1. **需求获取** - 从 TAPD 拉取需求内容
 2. **测试设计** - 识别测试场景和测试点
-3. **用例生成** - 生成符合 RF 规范的测试用例
-4. **质量保证** - RF 质量保证 Agent 检查用例质量
-5. **规范检查** - 检查生成的用例是否符合编写规范
-6. **结果分析** - 测试结果分析 Agent 分析质量指标
-7. **TAPD 转换** - 将 RF 用例转换为 TAPD 格式
-8. **导出上传** - 将测试用例导出并上传到 TAPD
+3. **接口文档** - 从 YAPI 获取接口文档（新增）
+4. **用例生成** - 生成符合 RF 规范的测试用例
+5. **质量保证** - RF 质量保证 Agent 检查用例质量
+6. **规范检查** - 检查生成的用例是否符合编写规范
+7. **执行测试** - 执行 RF 测试用例并验证（新增）
+8. **结果分析** - 测试结果分析 Agent 分析质量指标
+9. **TAPD 转换** - 将 RF 用例转换为 TAPD 格式
+10. **导出上传** - 将测试用例导出并上传到 TAPD
 
 ### 配置参数
 
@@ -168,6 +221,8 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd
 - RF 用例文件（.robot）
 - 质量保证报告
 - 规范检查报告
+- **测试执行报告**（新增）
+- **HTML 日志和报告**（新增）
 - 测试结果分析报告
 - TAPD Excel 文件
 - 导出结果统计
