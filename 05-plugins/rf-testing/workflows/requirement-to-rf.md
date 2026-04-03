@@ -11,6 +11,7 @@ flowchart TD
     mcp_fetch[[MCP: 从 TAPD 拉取需求内容]]
     skill_scenario[[Skill: 识别测试场景]]
     skill_points[[Skill: 识别测试点]]
+    mcp_yapi[[MCP: 从 YAPI 获取接口文档]]
     skill_generation[[Skill: 生成 RF 用例]]
     agent_rf_qa[[Agent: RF 质量保证检查]]
     skill_validation[[Skill: 检查 RF 规范]]
@@ -18,7 +19,8 @@ flowchart TD
     start_node --> mcp_fetch
     mcp_fetch --> skill_scenario
     skill_scenario --> skill_points
-    skill_points --> skill_generation
+    skill_points --> mcp_yapi
+    mcp_yapi --> skill_generation
     skill_generation --> agent_rf_qa
     agent_rf_qa --> skill_validation
     skill_validation --> end_node
@@ -26,6 +28,7 @@ flowchart TD
     style start_node fill:#90EE90
     style end_node fill:#FFB6C1
     style mcp_fetch fill:#87CEEB
+    style mcp_yapi fill:#87CEEB
     style skill_scenario fill:#FFE4B5
     style skill_points fill:#FFE4B5
     style skill_generation fill:#FFE4B5
@@ -56,6 +59,25 @@ flowchart TD
 **执行方法**:
 
 Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
+
+#### mcp_yapi(MCP 自动选择) - AI 工具选择模式
+
+<!-- MCP_NODE_METADATA: {"mode":"aiToolSelection","serverId":"yapi-auto-mcp","userIntent":"根据需求中的接口名称，从 YAPI 获取接口文档。\n提取接口的请求参数、响应格式、示例数据等。"} -->
+
+**MCP 服务器**: yapi-auto-mcp
+
+**验证状态**: 有效
+
+**用户意图（自然语言任务描述）**:
+
+```
+根据需求中的接口名称，从 YAPI 获取接口文档。
+提取接口的请求参数、响应格式、示例数据等。
+```
+
+**执行方法**:
+
+Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "yapi-auto-mcp" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
 
 ### 技能节点
 
@@ -95,9 +117,10 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd
 1. **需求获取** - 从 TAPD 拉取需求内容
 2. **场景识别** - 识别测试场景
 3. **测试点识别** - 识别具体测试点
-4. **用例生成** - 生成 RF 测试用例
-5. **质量保证** - RF 质量保证 Agent 检查用例质量
-6. **规范检查** - 检查用例规范
+4. **接口文档** - 从 YAPI 获取接口文档（新增）
+5. **用例生成** - 生成 RF 测试用例
+6. **质量保证** - RF 质量保证 Agent 检查用例质量
+7. **规范检查** - 检查用例规范
 
 ### 输入参数
 
