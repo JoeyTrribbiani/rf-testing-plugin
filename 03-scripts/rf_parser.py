@@ -52,18 +52,30 @@ def _parse_statistics(root: ET.Element) -> Dict[str, Any]:
     for stat in root.findall('.//stat'):
         status = stat.get('pass', '')
         if status == 'PASS':
-            passed += int(stat.get('value', '0'))
+            try:
+                passed += int(stat.get('value', '0'))
+            except (ValueError, TypeError):
+                passed += 0
         elif status == 'FAIL':
-            failed += int(stat.get('value', '0'))
+            try:
+                failed += int(stat.get('value', '0'))
+            except (ValueError, TypeError):
+                failed += 0
         elif status == 'SKIP':
-            skipped += int(stat.get('value', '0'))
+            try:
+                skipped += int(stat.get('value', '0'))
+            except (ValueError, TypeError):
+                skipped += 0
 
     total = passed + failed + skipped
 
     # 获取总耗时
     elapsed_elem = root.find('.//statistics/total/elapsedtime')
     if elapsed_elem is not None:
-        duration = int(elapsed_elem.get('value', '0')) / 1000.0
+        try:
+            duration = int(elapsed_elem.get('value', '0')) / 1000.0
+        except (ValueError, TypeError):
+            duration = 0.0
 
     return {
         "total": total,
@@ -79,10 +91,15 @@ def _parse_tests(root: ET.Element) -> List[Dict[str, Any]]:
     tests = []
 
     for test in root.findall('.//test'):
+        try:
+            duration = int(test.get('elapsedtime', '0')) / 1000.0
+        except (ValueError, TypeError):
+            duration = 0.0
+
         test_data = {
             "name": test.get('name', ''),
             "status": test.get('status', 'UNKNOWN'),
-            "duration": int(test.get('elapsedtime', '0')) / 1000.0,
+            "duration": duration,
             "tags": [tag.get('name', '') for tag in test.findall('tag')],
             "doc": test.get('doc', ''),
             "message": ''
@@ -104,11 +121,16 @@ def _parse_suites(root: ET.Element) -> List[Dict[str, Any]]:
     suites = []
 
     for suite in root.findall('.//suite'):
+        try:
+            duration = int(suite.get('elapsedtime', '0')) / 1000.0
+        except (ValueError, TypeError):
+            duration = 0.0
+
         suite_data = {
             "name": suite.get('name', ''),
             "source": suite.get('source', ''),
             "status": suite.get('status', 'UNKNOWN'),
-            "duration": int(suite.get('elapsedtime', '0')) / 1000.0
+            "duration": duration
         }
         suites.append(suite_data)
 
