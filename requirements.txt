@@ -13,6 +13,11 @@ openpyxl>=3.1.0
 
 robotframework>=3.2.2,<4.0.0
 
+## RF 执行能力依赖
+
+xmltodict>=0.13.0
+websocket-client>=1.0.0
+
 ## MCP Server 依赖
 
 如需 TAPD 支持，需安装：
@@ -26,6 +31,12 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Windows
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+如需 YAPI 支持，需 Node.js 环境（通过 npx 运行）：
+```bash
+# YAPI MCP 通过 npx 直接运行，无需额外安装
+# 只需配置环境变量 YAPI_BASE_URL 和 YAPI_TOKEN
 ```
 
 如需 GitLab 支持，需安装：
@@ -65,6 +76,8 @@ pip install -r requirements.txt
 pip install pandas>=2.0.0
 pip install openpyxl>=3.1.0
 pip install "robotframework>=3.2.2,<4.0.0"
+pip install "xmltodict>=0.13.0"
+pip install "websocket-client>=1.0.0"
 ```
 
 ## 注意事项
@@ -72,5 +85,6 @@ pip install "robotframework>=3.2.2,<4.0.0"
 1. 建议使用虚拟环境（venv 或 conda）
 2. Python 版本必须为 3.7.16 或更高
 3. JLTestLibrary 需要手动解压安装
-4. MCP Server TAPD 需要 uvx（通过 uv 安装）
-5. MCP Server GitLab 需要 npm
+4. MCP Server TAPD 需要 uv（通过 uv 安装）
+5. MCP Server YAPI 需要 Node.js 环境（通过 npx 运行）
+6. MCP Server GitLab 需要 npm

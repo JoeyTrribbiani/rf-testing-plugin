@@ -4,6 +4,10 @@
       "command": "mcp-server-tapd",
       "args": ["--mode", "stdio"]
     },
+    "yapi-auto-mcp": {
+      "command": "npx",
+      "args": ["-y", "yapi-auto-mcp", "--stdio"]
+    },
     "gitlab": {
       "command": "cmd",
       "args": [

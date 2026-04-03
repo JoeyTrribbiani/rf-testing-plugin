@@ -288,9 +288,18 @@ configure_env_and_mcp() {
 
     read -p "请输入 GITLAB_PERSONAL_ACCESS_TOKEN（可选）: " GITLAB_TOKEN
 
+    # 收集 YAPI 配置（可选）
+    echo ""
+    echo "[3/5] 配置 YAPI（可选，按 Enter 跳过）"
+    echo "----------------------------------------"
+    read -p "请输入 YAPI_BASE_URL（YAPI 服务器地址）: " YAPI_URL
+    if [[ -n "$YAPI_URL" ]]; then
+        read -p "请输入 YAPI_TOKEN（格式：projectId:token）: " YAPI_TOKEN
+    fi
+
     # 写入环境变量到 Shell RC
     echo ""
-    echo "[3/4] 写入环境变量到 $SHELL_RC..."
+    echo "[4/5] 写入环境变量到 $SHELL_RC..."
 
     # 备份原文件
     if [[ -f "$SHELL_RC" ]]; then
@@ -301,6 +310,8 @@ configure_env_and_mcp() {
     sed -i.bak '/^export TAPD_ACCESS_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
     sed -i.bak '/^export GITLAB_API_URL=/d' "$SHELL_RC" 2>/dev/null || true
     sed -i.bak '/^export GITLAB_PERSONAL_ACCESS_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
+    sed -i.bak '/^export YAPI_BASE_URL=/d' "$SHELL_RC" 2>/dev/null || true
+    sed -i.bak '/^export YAPI_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
 
     # 添加新配置
     echo "" >> "$SHELL_RC"
@@ -310,10 +321,14 @@ configure_env_and_mcp() {
     if [[ -n "$GITLAB_TOKEN" ]]; then
         echo "export GITLAB_PERSONAL_ACCESS_TOKEN=\"$GITLAB_TOKEN\"" >> "$SHELL_RC"
     fi
+    if [[ -n "$YAPI_URL" ]]; then
+        echo "export YAPI_BASE_URL=\"$YAPI_URL\"" >> "$SHELL_RC"
+        echo "export YAPI_TOKEN=\"$YAPI_TOKEN\"" >> "$SHELL_RC"
+    fi
 
     # 创建 MCP 配置
     echo ""
-    echo "[4/4] 配置 Claude MCP 服务器..."
+    echo "[5/5] 配置 Claude MCP 服务器..."
 
     CLAUDE_CONFIG_DIR="$HOME/.claude"
     MCP_FILE="$CLAUDE_CONFIG_DIR/mcp.json"
@@ -322,20 +337,27 @@ configure_env_and_mcp() {
     mkdir -p "$CLAUDE_CONFIG_DIR"
 
     # 构建 JSON 配置
-    if [[ -n "$GITLAB_TOKEN" ]]; then
-        cat > "$MCP_FILE" << EOF
+    cat > "$MCP_FILE" << EOF
 {
   "mcpServers": {
     "tapd": {
-      "command": "uvx",
-      "args": ["mcp-server-tapd"],
-      "env": {
-        "TAPD_ACCESS_TOKEN": "${TAPD_TOKEN}",
-        "TAPD_API_BASE_URL": "https://api.tapd.cn",
-        "TAPD_BASE_URL": "https://www.tapd.cn",
-        "BOT_URL": ""
-      }
-    },
+      "command": "mcp-server-tapd",
+      "args": ["--mode", "stdio"]
+EOF
+
+    # 判断是否有后续服务器需要添加逗号
+    if [[ -n "$GITLAB_TOKEN" ]] || [[ -n "$YAPI_URL" ]]; then
+        cat >> "$MCP_FILE" << EOF
+    }
+EOF
+    fi
+
+    # 添加 GitLab 服务器（如果配置了）
+    if [[ -n "$GITLAB_TOKEN" ]]; then
+        if [[ -z "$YAPI_URL" ]]; then
+            # 如果只有 gitlab，没有 YAPI，不需要逗号
+            cat >> "$MCP_FILE" << EOF
+,
     "gitlab": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-gitlab"],
@@ -344,27 +366,38 @@ configure_env_and_mcp() {
         "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TOKEN}"
       }
     }
-  }
-}
 EOF
-    else
-        cat > "$MCP_FILE" << EOF
-{
-  "mcpServers": {
-    "tapd": {
-      "command": "uvx",
-      "args": ["mcp-server-tapd"],
+        else
+            # 如果还有 YAPI，需要加逗号
+            cat >> "$MCP_FILE" << EOF
+,
+    "gitlab": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
       "env": {
-        "TAPD_ACCESS_TOKEN": "${TAPD_TOKEN}",
-        "TAPD_API_BASE_URL": "https://api.tapd.cn",
-        "TAPD_BASE_URL": "https://www.tapd.cn",
-        "BOT_URL": ""
+        "GITLAB_API_URL": "${GITLAB_URL}",
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TOKEN}"
       }
     }
+EOF
+        fi
+    fi
+
+    # 添加 YAPI 服务器（如果配置了）
+    if [[ -n "$YAPI_URL" ]]; then
+        cat >> "$MCP_FILE" << EOF
+,
+    "yapi-auto-mcp": {
+      "command": "npx",
+      "args": ["-y", "yapi-auto-mcp", "--stdio"]
+    }
+EOF
+    fi
+
+    cat >> "$MCP_FILE" << EOF
   }
 }
 EOF
-    fi
 
     # 验证配置
     echo ""
@@ -374,6 +407,19 @@ EOF
     echo ""
     log_info "环境变量已写入: $SHELL_RC"
     log_info "MCP 配置已写入: $MCP_FILE"
+    echo ""
+    log_warn "配置的 MCP 服务器:"
+    echo "  - tapd (TAPD 需求管理)"
+    if [[ -n "$GITLAB_TOKEN" ]]; then
+        echo "  - gitlab (GitLab 代码管理)"
+    else
+        echo "  - gitlab (未配置)"
+    fi
+    if [[ -n "$YAPI_URL" ]]; then
+        echo "  - yapi-auto-mcp (YAPI 接口文档)"
+    else
+        echo "  - yapi-auto-mcp (未配置)"
+    fi
     echo ""
     log_warn "[重要] 请执行以下命令使配置生效:"
     echo ""

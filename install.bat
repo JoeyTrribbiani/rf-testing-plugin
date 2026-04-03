@@ -237,12 +237,24 @@ if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
 set /p GITLAB_TOKEN=Enter GITLAB_TOKEN. Optional, press Enter to skip:
 
+REM Collect YAPI configuration
+echo.
+echo Configure YAPI. Optional, press Enter to skip
+set /p YAPI_URL=Enter YAPI_BASE_URL. Optional, press Enter to skip:
+if not "%YAPI_URL%"=="" (
+    set /p YAPI_TOKEN=Enter YAPI_TOKEN (format: projectId:token):
+)
+
 REM Write environment variables
 echo.
 echo Writing system environment variables...
 setx TAPD_ACCESS_TOKEN "%TAPD_TOKEN%" >nul
 setx GITLAB_API_URL "%GITLAB_URL%" >nul
 if not "%GITLAB_TOKEN%"=="" setx GITLAB_PERSONAL_ACCESS_TOKEN "%GITLAB_TOKEN%" >nul
+if not "%YAPI_URL%"=="" (
+    setx YAPI_BASE_URL "%YAPI_URL%" >nul
+    setx YAPI_TOKEN "%YAPI_TOKEN%" >nul
+)
 echo [INFO] Environment variables written
 
 REM Create MCP configuration
@@ -258,14 +270,8 @@ set JSON_TEMP=%TEMP%\mcp_config.json
 echo {> "%JSON_TEMP%"
 echo   "mcpServers": {>> "%JSON_TEMP%"
 echo     "tapd": {>> "%JSON_TEMP%"
-echo       "command": "uvx",>> "%JSON_TEMP%"
-echo       "args": ["mcp-server-tapd"],>> "%JSON_TEMP%"
-echo       "env": {>> "%JSON_TEMP%"
-echo         "TAPD_ACCESS_TOKEN": "%TAPD_TOKEN%",>> "%JSON_TEMP%"
-echo         "TAPD_API_BASE_URL": "https://api.tapd.cn",>> "%JSON_TEMP%"
-echo         "TAPD_BASE_URL": "https://www.tapd.cn",>> "%JSON_TEMP%"
-echo         "BOT_URL": "">> "%JSON_TEMP%"
-echo       }>> "%JSON_TEMP%"
+echo       "command": "mcp-server-tapd",>> "%JSON_TEMP%"
+echo       "args": ["--mode", "stdio"]>> "%JSON_TEMP%"
 echo     }>> "%JSON_TEMP%"
 if not "%GITLAB_TOKEN%"=="" (
 echo     ,>> "%JSON_TEMP%"
@@ -278,6 +284,13 @@ echo         "GITLAB_PERSONAL_ACCESS_TOKEN": "%GITLAB_TOKEN%">> "%JSON_TEMP%"
 echo       }>> "%JSON_TEMP%"
 echo     }>> "%JSON_TEMP%"
 )
+if not "%YAPI_URL%"=="" (
+echo     ,>> "%JSON_TEMP%"
+echo     "yapi-auto-mcp": {>> "%JSON_TEMP%"
+echo       "command": "npx",>> "%JSON_TEMP%"
+echo       "args": ["-y", "yapi-auto-mcp", "--stdio"]>> "%JSON_TEMP%"
+echo     }>> "%JSON_TEMP%"
+)
 echo   }>> "%JSON_TEMP%"
 echo }>> "%JSON_TEMP%"
 
@@ -286,6 +299,19 @@ echo [INFO] MCP configuration written
 
 echo.
 echo Configuration complete
+echo.
+echo [INFO] Configured MCP servers:
+echo   - tapd (TAPD requirement management)
+if not "%GITLAB_TOKEN%"=="" (
+    echo   - gitlab (GitLab code management)
+) else (
+    echo   - gitlab (not configured)
+)
+if not "%YAPI_URL%"=="" (
+    echo   - yapi-auto-mcp (YAPI API documentation)
+) else (
+    echo   - yapi-auto-mcp (not configured)
+)
 echo.
 echo [WARN] Restart terminal or Claude to take effect
 echo.
@@ -347,6 +373,8 @@ echo Environment variables:
 echo   TAPD_ACCESS_TOKEN - Required
 echo   GITLAB_API_URL - Optional
 echo   GITLAB_PERSONAL_ACCESS_TOKEN - Optional
+echo   YAPI_BASE_URL - Optional
+echo   YAPI_TOKEN - Optional
 echo.
 
 echo [INFO] Installation successful
