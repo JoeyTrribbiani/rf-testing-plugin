@@ -5,6 +5,54 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.3.0] - 2026-04-02
+
+### 新增（Added）
+
+- 新增 RF 执行模块 `03-scripts/rf_runner.py`：Robot Framework 执行脚本入口
+  - 支持命令行参数构建 robot 命令
+  - 集成 Python 环境自动检测（`python_detector.py`）
+  - 支持测试用例过滤、标签过滤、变量传递等完整参数
+  - 默认集成 `rf_listener.py` 监听器实时输出测试进度
+- 新增 RF 事件监听器 `03-scripts/rf_listener.py`
+  - 捕获测试套件和测试用例的执行事件
+  - 实时输出测试进度（PASS/FAIL/SKIP 状态）
+  - 彩色输出和执行时间统计
+  - 提供测试汇总报告
+- 新增 RF 结果解析器 `03-scripts/rf_parser.py`
+  - 解析 Robot Framework 的 output.xml 文件
+  - 提取统计信息（总数、通过、失败、跳过）
+  - 解析测试用例详情（名称、状态、耗时、标签、错误消息）
+  - 解析测试套件结构
+- 新增 YAPI MCP 服务器集成，支持接口文档查询和管理
+- 更新 `.mcp.json` 配置，添加 `yapi-auto-mcp` 服务器
+- 更新 `install.sh`，添加 YAPI 配置收集步骤（步骤 [3/5]）
+- 更新 `install.bat`，添加 YAPI 配置收集和环境变量写入
+- 更新 `requirements.txt`，添加 YAPI MCP 安装说明（通过 npx 运行）
+
+### 修复（Fixed）
+
+- 移除未使用的 `datetime` 导入（`rf_listener.py`, `rf_parser.py`）
+- 移除未使用的 `start_time` 属性（`rf_listener.py`）
+- 为所有可选参数添加正确的 `Optional` 类型注解（`rf_runner.py`）
+
+### 变更（Changed）
+
+- 修正 TAPD MCP 服务器配置，使用 `mcp-server-tapd` 直接命令，移除 env 配置
+- 更新 `install.sh` MCP JSON 生成逻辑，支持可选服务器动态拼接
+- 更新 `install.bat` MCP JSON 生成逻辑，支持可选服务器动态拼接
+- 更新配置验证输出，显示已配置和未配置的 MCP 服务器状态
+- 更新环境变量说明，添加 YAPI_BASE_URL 和 YAPI_TOKEN
+
+### 文档（Documentation）
+
+- 新增 RF 执行能力设计文档 `docs/superpowers/specs/2026-04-02-rf-execution-capability-design.md`
+  - 定义 RF 执行模块：rf_runner.py、rf_listener.py、rf_parser.py、rf_executor.py
+  - 添加 YAPI MCP 集成章节（第 10 节）
+  - 添加安装依赖更新章节（第 11 节）
+
+---
+
 ## [2.2.0] - 2026-04-02
 
 ### 变更（Changed）
