@@ -24,7 +24,15 @@
   - 提取统计信息（总数、通过、失败、跳过）
   - 解析测试用例详情（名称、状态、耗时、标签、错误消息）
   - 解析测试套件结构
+- 新增 RF 执行器封装 `03-scripts/rf_executor.py`
+  - 整合 runner、listener、parser 提供统一执行接口
+  - 支持便捷函数 `execute_robot_test()`
+  - 自动检测 Python 环境
 - 新增 YAPI MCP 服务器集成，支持接口文档查询和管理
+- 更新 `full-test-pipeline.md` 工作流
+  - 新增阶段 2.5：从 YAPI 获取接口文档
+  - 新增阶段 5：执行 RF 测试用例并验证
+  - 重新编号后续阶段（原阶段4→6，原阶段5→7）
 - 更新 `.mcp.json` 配置，添加 `yapi-auto-mcp` 服务器
 - 更新 `install.sh`，添加 YAPI 配置收集步骤（步骤 [3/5]）
 - 更新 `install.bat`，添加 YAPI 配置收集和环境变量写入
@@ -35,6 +43,9 @@
 - 移除未使用的 `datetime` 导入（`rf_listener.py`, `rf_parser.py`）
 - 移除未使用的 `start_time` 属性（`rf_listener.py`）
 - 为所有可选参数添加正确的 `Optional` 类型注解（`rf_runner.py`）
+- 修复 rf_parser.py 中 XML 数值属性转换的 ValueError 问题
+  - 添加 try-except 块处理非数值数据
+  - 使用安全的默认值（0 或 0.0）
 
 ### 变更（Changed）
 
