@@ -79,6 +79,38 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd
 
 Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "yapi-auto-mcp" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
 
+**YAPI 集成说明**:
+
+YAPI MCP 提供以下工具用于接口文档获取：
+
+| 工具 | 功能 | 参数 |
+|------|------|------|
+| `search_interfaces` | 按名称、路径或标签搜索接口 | `keyword`, `method`, `tag` |
+| `get_interface_detail` | 获取接口详细信息 | `interface_id`, `project_id` |
+| `list_projects` | 列出所有项目 | 无 |
+| `list_categories` | 列出项目分类 | `project_id` |
+
+**环境变量配置**:
+```bash
+export YAPI_BASE_URL="https://yapi.example.com"
+export YAPI_TOKEN="123:abc456,456:def789"  # 格式: projectId:projectToken
+```
+
+**项目 Token 说明**:
+- YAPI 中每个项目有唯一的 `project_id` 和 `project_token`
+- Token 格式为 `{project_id}:{project_token}`
+- 示例：`123:abc456def789` 其中 `123` 是项目ID，`abc456def789` 是项目Token
+- 项目Token 可在 YAPI 项目设置中查看和生成
+- 使用此 token 可以请求项目的 OpenAPI 规范
+
+**使用流程**:
+1. 从需求内容中提取接口名称/路径关键词
+2. 配置正确的 YAPI_TOKEN（包含项目ID和项目Token）
+3. 调用 `search_interfaces` 搜索匹配的接口
+4. 调用 `get_interface_detail` 获取完整接口定义
+5. 提取请求参数、响应格式、示例数据等
+6. 将接口信息传递给 RF 用例生成阶段
+
 ### 技能节点
 
 #### skill_scenario(识别测试场景)

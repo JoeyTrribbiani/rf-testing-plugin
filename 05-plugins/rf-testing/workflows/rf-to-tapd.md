@@ -9,25 +9,24 @@ flowchart TD
     end_node([结束])
 
     script_execute[[Script: 执行 RF 测试用例]]
-    skill_conversion[[Skill: RF 转 TAPD]]
     agent_results[[Agent: 测试结果分析]]
-    mcp_export[[MCP: 导出测试用例到 TAPD]]
+    skill_conversion[[Skill: RF 转 TAPD]]
 
     start_node --> script_execute
     script_execute --> agent_results
     agent_results --> skill_conversion
-    skill_conversion --> mcp_export
-    mcp_export --> end_node
+    skill_conversion --> end_node
 
     style start_node fill:#90EE90
     style end_node fill:#FFB6C1
     style script_execute fill:#DDA0DD
     style skill_conversion fill:#FFE4B5
     style agent_results fill:#98FB98
-    style mcp_export fill:#87CEEB
 ```
 
 ## 工作流执行指南
+
+**说明**: 本工作流专注于生成 TAPD Excel 格式文件，不涉及上传到 TAPD 平台。
 
 ### 脚本节点
 
@@ -49,31 +48,12 @@ flowchart TD
   - `log_file`: HTML 日志文件路径
   - `report_file`: HTML 报告文件路径
 
-### MCP 工具节点
-
-#### mcp_export(MCP 自动选择) - AI 工具选择模式
-
-<!-- MCP_NODE_METADATA: {"mode":"aiToolSelection","serverId":"tapd","userIntent":"将生成的测试用例转换为 TAPD 格式，并导出到 TAPD 平台。"} -->
-
-**MCP 服务器**: tapd
-
-**验证状态**: 有效
-
-**用户意图（自然语言任务描述）**:
-
-```
-将生成的测试用例转换为 TAPD 格式，并导出到 TAPD 平台。
-```
-
-**执行方法**:
-
-Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
-
 ### 技能节点
 
 #### skill_conversion(RF 转 TAPD)
 
 - **提示**: skill "rf-tapd-conversion"
+- **输出**: TAPD Excel 格式文件
 
 ### Agent 节点
 
