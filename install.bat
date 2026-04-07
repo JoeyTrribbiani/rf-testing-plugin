@@ -2,8 +2,7 @@
 
 REM Plugin configuration
 set PLUGIN_NAME=rf-testing-plugin
-set PLUGIN_REPO=https://github.com/JoeyTrribbiani/rf-testing-plugin.git
-set PLUGIN_DIR=%USERPROFILE%\.claude\plugins\%PLUGIN_NAME%
+set PLUGIN_DIR=%~dp0
 
 echo [INFO] Start installing %PLUGIN_NAME%...
 echo.
@@ -22,37 +21,16 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Clone plugin repository
-echo [INFO] Cloning plugin repository...
+REM Check plugin directory
+echo [INFO] Checking plugin directory...
 
-if exist "%PLUGIN_DIR%" (
-    echo [WARN] Plugin directory already exists
-    choice /C YN /M "Delete and re-clone (Y/N)"
-    if errorlevel 2 (
-        echo [INFO] Skip cloning step
-        goto detect_python
-    )
-    echo [INFO] Deleting existing directory...
-    rmdir /s /q "%PLUGIN_DIR%"
-)
-
-if exist "%PLUGIN_DIR%" (
-    echo [ERROR] Directory still exists, cannot clone
-    echo [INFO] Please delete manually or choose to delete
+if not exist "%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json" (
+    echo [ERROR] Plugin files not found in current directory
+    echo [INFO] Please run this script from the plugin root directory
     exit /b 1
 )
 
-if not exist "%USERPROFILE%\.claude\plugins\" (
-    mkdir "%USERPROFILE%\.claude\plugins\"
-)
-
-git clone "%PLUGIN_REPO%" "%PLUGIN_DIR%"
-if errorlevel 1 (
-    echo [ERROR] Clone failed
-    exit /b 1
-)
-
-echo [INFO] Plugin cloned
+echo [INFO] Plugin directory verified: %PLUGIN_DIR%
 echo.
 
 :detect_python
@@ -345,32 +323,26 @@ echo.
 :verify_install
 echo [INFO] Verifying installation...
 
-if not exist "%PLUGIN_DIR%" (
-    echo [ERROR] Plugin directory not found
+if not exist "%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json" (
+    echo [ERROR] Plugin files not found in %PLUGIN_DIR%
     goto failed
 )
 
-set PLUGIN_FILES[0]=%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json
-set PLUGIN_FILES[1]=%PLUGIN_DIR%\05-plugins\rf-testing\.claude-plugin\plugin.json
-set PLUGIN_FILES[2]=%PLUGIN_DIR%\05-plugins\rf-testing\commands\start.md
+echo [INFO] Checking plugin files...
 
-set PLUGIN_FILE0=%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json
-set PLUGIN_FILE1=%PLUGIN_DIR%\05-plugins\rf-testing\.claude-plugin\plugin.json
-set PLUGIN_FILE2=%PLUGIN_DIR%\05-plugins\rf-testing\commands\start.md
-
-if exist "%PLUGIN_FILE0%" (
+if exist "%PLUGIN_DIR%\05-plugins\rf-testing\.mcp.json" (
     echo [INFO] File exists: .mcp.json
 ) else (
     echo [WARN] File not found: .mcp.json
 )
 
-if exist "%PLUGIN_FILE1%" (
+if exist "%PLUGIN_DIR%\05-plugins\rf-testing\.claude-plugin\plugin.json" (
     echo [INFO] File exists: plugin.json
 ) else (
     echo [WARN] File not found: plugin.json
 )
 
-if exist "%PLUGIN_FILE2%" (
+if exist "%PLUGIN_DIR%\05-plugins\rf-testing\commands\start.md" (
     echo [INFO] File exists: start.md
 ) else (
     echo [WARN] File not found: start.md

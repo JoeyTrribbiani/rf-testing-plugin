@@ -17,14 +17,31 @@
 
 ### 1. 安装插件
 
-通过 marketplace 安装插件：
+**方式1：本地安装（推荐）**
+
+1. 下载或克隆插件到本地目录
+2. 在 Claude Code 中执行：
 
 ```text
-/plugin marketplace add %USERPROFILE%\.claude\plugins\rf-testing-plugin
+/plugin marketplace add <插件目录路径>
 /plugin install rf-testing
 ```
 
-或使用一键安装脚本：
+示例（Windows）：
+```text
+/plugin marketplace add D:\workspace\python\rf-testing-plugin
+/plugin install rf-testing
+```
+
+示例（Linux/macOS）：
+```text
+/plugin marketplace add ~/rf-testing-plugin
+/plugin install rf-testing
+```
+
+**方式2：使用一键安装脚本**
+
+安装脚本会自动配置 Python 依赖、环境变量和 MCP 服务器：
 
 **Windows:**
 ```cmd

@@ -12,8 +12,7 @@ NC='\033[0m' # No Color
 
 # 插件配置
 PLUGIN_NAME="rf-testing-plugin"
-PLUGIN_REPO="https://github.com/JoeyTrribbiani/rf-testing-plugin.git"
-PLUGIN_DIR="$HOME/.claude/plugins/$PLUGIN_NAME"
+PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # 日志函数
 log_info() {
@@ -207,35 +206,23 @@ if len(paths) >= $sp_choice:
     log_info "JLTestLibrary 安装成功"
 }
 
-# 克隆插件仓库
-clone_plugin() {
-    log_info "克隆插件仓库..."
+# 检查插件目录
+verify_plugin_directory() {
+    log_info "检查插件目录..."
 
-    if [ -d "$PLUGIN_DIR" ]; then
-        log_warn "插件目录已存在: $PLUGIN_DIR"
-        read -p "是否删除并重新克隆？(y/n) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            rm -rf "$PLUGIN_DIR"
-        else
-            log_info "跳过克隆步骤"
-            return
-        fi
+    if [ ! -f "$PLUGIN_DIR/05-plugins/rf-testing/.mcp.json" ]; then
+        log_error "插件文件未找到，请确保从插件根目录运行此脚本"
+        log_info "当前目录: $PLUGIN_DIR"
+        exit 1
     fi
 
-    mkdir -p "$(dirname "$PLUGIN_DIR")"
-    git clone "$PLUGIN_REPO" "$PLUGIN_DIR" || {
-        log_error "克隆失败，请检查网络连接和仓库地址"
-        exit 1
-    }
-
-    log_info "插件克隆完成: $PLUGIN_DIR"
+    log_info "插件目录验证通过: $PLUGIN_DIR"
 }
 
 # 配置插件（提示 marketplace 安装）
 configure_plugin() {
     log_info "===================================="
-    log_info "插件已安装到本地目录"
+    log_info "插件已准备就绪"
     log_info "===================================="
     log_info ""
     log_info "要让 Claude Code 识别此插件，请在 Claude Code 中执行："
@@ -448,12 +435,6 @@ EOF
 verify_installation() {
     log_info "验证安装..."
 
-    # 检查插件目录
-    if [ ! -d "$PLUGIN_DIR" ]; then
-        log_error "插件目录不存在: $PLUGIN_DIR"
-        return 1
-    fi
-
     # 检查插件文件
     local plugin_files=(
         "$PLUGIN_DIR/05-plugins/rf-testing/.mcp.json"
@@ -532,8 +513,8 @@ main() {
     check_python_environment  # 替换原有的 python3/pip3 检查
 
     # 安装步骤
+    verify_plugin_directory
     install_python_deps
-    clone_plugin
     configure_plugin
     install_jltestlibrary
 

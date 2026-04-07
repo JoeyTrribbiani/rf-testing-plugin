@@ -9,16 +9,13 @@
 /plugin install rf-testing
 ```
 
-### 方法2：一键安装脚本
+### 方法2：一键安装脚本（本地执行）
+
+**前置条件：** 将插件下载到本地目录
 
 **Linux / macOS:**
 
 ```bash
-# 下载并执行安装脚本
-curl -fsSL https://raw.githubusercontent.com/JoeyTrribbiani/rf-testing-plugin/master/install.sh | bash
-
-# 或手动下载后执行
-git clone https://github.com/JoeyTrribbiani/rf-testing-plugin.git
 cd rf-testing-plugin
 chmod +x install.sh
 ./install.sh
@@ -27,8 +24,6 @@ chmod +x install.sh
 **Windows:**
 
 ```cmd
-# 下载并执行安装脚本
-git clone https://github.com/JoeyTrribbiani/rf-testing-plugin.git
 cd rf-testing-plugin
 install.bat
 ```
@@ -46,8 +41,7 @@ install.bat
 ### 方法3：手动安装
 
 ```bash
-# 克隆仓库
-git clone https://github.com/JoeyTrribbiani/rf-testing-plugin.git
+# 进入插件目录
 cd rf-testing-plugin
 
 # 安装 Python 依赖
