@@ -72,7 +72,7 @@ echo.
 python "%PLUGIN_DIR%\03-scripts\python_detector.py"
 echo.
 
-set /p PYTHON_CHOICE=Select Python environment. Enter number or press Enter for default:
+set /p PYTHON_CHOICE="Select Python environment (enter number or press Enter for default) "
 if "%PYTHON_CHOICE%"=="" set PYTHON_CHOICE=1
 
 REM Use Windows PowerShell to parse JSON safely
@@ -164,7 +164,7 @@ echo.
 "%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --python-path "%PYTHON_CMD%"
 echo.
 
-set /p SP_CHOICE=Select target directory. Enter number or press Enter for default:
+set /p SP_CHOICE="Select target directory (enter number or press Enter for default) "
 if "%SP_CHOICE%"=="" set SP_CHOICE=1
 
 REM Parse site-packages path
@@ -213,18 +213,18 @@ echo [INFO] Command 2: /plugin install rf-testing
 echo.
 echo Configure environment variables and MCP servers
 echo.
-set /p DO_CONFIG=Configure now? Enter y or n, press Enter to skip:
+set /p DO_CONFIG="Configure now (y/n, press Enter to skip) "
 if /i not "%DO_CONFIG%"=="y" goto verify_install
 
 REM Collect TAPD configuration
 echo.
 echo Configure TAPD access token
 echo Get token at: https://www.tapd.cn/personal_settings/index?tab=personal_token
-set /p TAPD_TOKEN=Enter TAPD_ACCESS_TOKEN:
+set /p TAPD_TOKEN="Enter TAPD_ACCESS_TOKEN "
 
 if "%TAPD_TOKEN%"=="" (
     echo [WARN] Token is empty
-    set /p SKIP_CONFIG=Skip configuration? Enter y or n:
+    set /p SKIP_CONFIG="Skip configuration (y/n) "
     if /i "%SKIP_CONFIG%"=="y" goto verify_install
 )
 
@@ -232,22 +232,22 @@ REM Collect GitLab configuration
 echo.
 echo Configure GitLab. Optional, press Enter to skip
 echo Get token at: https://gitlab.jlpay.com/-/user_settings/personal_access_tokens
-set /p GITLAB_URL=Enter GITLAB_API_URL. Press Enter for default:
+set /p GITLAB_URL="Enter GITLAB_API_URL (press Enter for default) "
 if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
-set /p GITLAB_TOKEN=Enter GITLAB_TOKEN. Optional, press Enter to skip:
+set /p GITLAB_TOKEN="Enter GITLAB_TOKEN (optional, press Enter to skip) "
 
 REM Collect GitHub configuration
 echo.
 echo Configure GitHub. Optional, press Enter to skip
-set /p GITHUB_TOKEN=Enter GITHUB_TOKEN. Optional, press Enter to skip:
+set /p GITHUB_TOKEN="Enter GITHUB_TOKEN (optional, press Enter to skip) "
 
 REM Collect YAPI configuration
 echo.
 echo Configure YAPI. Optional, press Enter to skip
-set /p YAPI_URL=Enter YAPI_BASE_URL. Optional, press Enter to skip:
+set /p YAPI_URL="Enter YAPI_BASE_URL (optional, press Enter to skip) "
 if not "%YAPI_URL%"=="" (
-    set /p YAPI_TOKEN=Enter YAPI_TOKEN (format: projectId:token):
+    set /p YAPI_TOKEN="Enter YAPI_TOKEN (format projectId token) "
 )
 
 REM Write environment variables
