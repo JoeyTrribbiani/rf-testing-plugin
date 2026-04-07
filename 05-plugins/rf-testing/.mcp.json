@@ -4,7 +4,6 @@
       "command": "uvx",
       "args": ["mcp-server-tapd"],
       "env": {
-        "TAPD_ACCESS_TOKEN": "${TAPD_ACCESS_TOKEN}",
         "TAPD_API_BASE_URL": "https://api.tapd.cn",
         "TAPD_BASE_URL": "https://www.tapd.cn"
       }
@@ -13,19 +12,17 @@
       "command": "npx",
       "args": ["-y", "yapi-auto-mcp", "--stdio"]
     },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"]
+    },
     "gitlab": {
+      "comment": "GitLab MCP server 已归档，使用 git clone 备用方案",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-gitlab"],
       "env": {
         "GITLAB_API_URL": "${GITLAB_API_URL}",
         "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_PERSONAL_ACCESS_TOKEN}"
-      }
-    },
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
       }
     }
   }

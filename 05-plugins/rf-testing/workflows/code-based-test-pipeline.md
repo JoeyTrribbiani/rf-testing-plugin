@@ -163,17 +163,16 @@ flowchart TD
 
 ### mcp_gitlab_fetch（GitLab 代码获取）
 
-- **MCP 服务器**: gitlab
-- **用户意图**：
-```
-从 GitLab 获取指定仓库的代码。
-用户可选择指定分支（如 develop、master）或指定 commit。
-获取代码后用于分析改动点。
-```
-- **参数**：
-  - `project_path`: GitLab 项目路径（如 `group/project`）
-  - `branch_or_commit`: 分支名或 commit SHA
-  - `output_dir`: 代码输出目录（临时）
+- **方式**: git clone 备用方案（MCP 服务器已归档）
+- **说明**: GitLab MCP 服务器 (@modelcontextprotocol/server-gitlab) 已被归档，使用 git clone 直接获取代码
+- **环境变量**:
+  - `GITLAB_API_URL`: GitLab API 地址（如 `https://gitlab.jlpay.com/api/v4`）
+  - `GITLAB_PERSONAL_ACCESS_TOKEN`: GitLab Personal Access Token
+- **执行方法**:
+  1. 解析用户输入的 GitLab 项目路径
+  2. 使用 git clone 获取代码（深度1，减少下载量）
+  3. 代码下载到临时目录（`$TMPDIR/rf-testing/`）
+- **后续操作**: 可以使用环境变量中的 `GITLAB_API_URL` 和 `GITLAB_PERSONAL_ACCESS_TOKEN` 进行 GitLab API 调用
 
 ### mcp_github_fetch（GitHub 代码获取）
 
