@@ -246,42 +246,70 @@ rf-testing-plugin/
 
 ## 使用方式
 
+### 可用命令
+
+| 命令 | 用途 | 示例 |
+|------|------|------|
+| `/rf-testing:start` | 启动完整测试工作流（自动识别输入类型） | `/rf-testing:start <tapd-link>` |
+| `/rf-testing:gitlab` | 从 GitLab 代码分析启动 | `/rf-testing:gitlab group/project` |
+| `/rf-testing:github` | 从 GitHub 代码分析启动 | `/rf-testing:github owner/repo` |
+| `/rf-testing:requirement-to-rf` | 仅需求转 RF 用例 | `/rf-testing:requirement-to-rf <tapd-link>` |
+| `/rf-testing:rf-to-tapd` | 仅 RF 转 TAPD 格式 | `/rf-testing:rf-to-tapd <robot-file>` |
+
 ### 双模式启动
 
 插件支持两种输入模式启动：
 
 **模式 A: TAPD 需求模式**
 ```bash
-/rf-testing:start <tapd-link>
+/rf-testing:start https://www.tapd.cn/48200023/prong/stories/view/1148200023001077267
 ```
 
 **模式 B: GitLab/GitHub 代码分析模式**
 ```bash
-/rf-testing:start <project-path>
+/rf-testing:start mygroup/myproject
 ```
 
 如果不传参数，插件会询问用户选择输入方式。
 
-### 完整测试流程
+### 专用命令
 
-从输入到 TAPD 导出的完整流程。
+#### GitLab 代码分析
 
+直接从 GitLab 项目启动代码分析模式：
 ```bash
-/rf-testing:start <tapd-link>
+/rf-testing:gitlab <project-path>
 ```
 
-如果不传链接，插件会直接向用户索要 TAPD 需求链接。
+示例：
+```bash
+/rf-testing:gitlab pay-plus/base/ai-first
+```
+
+#### GitHub 代码分析
+
+直接从 GitHub 仓库启动代码分析模式：
+```bash
+/rf-testing:github <repo-path>
+```
+
+示例：
+```bash
+/rf-testing:github facebook/react
+```
 
 ### 子工作流
 
 #### 需求转用例
 
+仅执行需求到 RF 用例的转换，不执行测试：
 ```bash
 /rf-testing:requirement-to-rf <tapd-link>
 ```
 
 #### RF 转 TAPD
 
+仅执行 RF 用例到 TAPD 格式的转换：
 ```bash
 /rf-testing:rf-to-tapd <robot-file-path>
 ```
@@ -506,6 +534,53 @@ unzip 03-scripts/JLTestLibrary.zip -d <target_dir>
 ```bash
 pip install -r requirements.txt
 ```
+
+## 故障排除
+
+### 安装脚本问题
+
+**问题：安装脚本复制文件失败**
+
+如果 `install.bat` 或 `install.sh` 在复制文件时失败，可以手动复制：
+
+**Windows 手动复制：**
+```cmd
+REM 删除已存在的插件目录（如果有）
+rmdir /s /q %USERPROFILE%\.claude\plugins\rf-testing-plugin
+
+REM 创建插件目录并复制文件
+mkdir %USERPROFILE%\.claude\plugins\rf-testing-plugin
+robocopy D:\workspace\python\rf-testing-plugin %USERPROFILE%\.claude\plugins\rf-testing-plugin /E /XD .claude .git
+```
+
+**Linux/macOS 手动复制：**
+```bash
+# 删除已存在的插件目录（如果有）
+rm -rf ~/.claude/plugins/rf-testing-plugin
+
+# 创建插件目录并复制文件
+mkdir -p ~/.claude/plugins/rf-testing-plugin
+rsync -av --exclude='.claude' --exclude='.git' ~/rf-testing-plugin/ ~/.claude/plugins/rf-testing-plugin/
+```
+
+**问题：安装脚本提示找不到 Python**
+
+确保 Python 已安装并添加到 PATH：
+```cmd
+where python
+```
+
+如果未找到，请安装 Python 3.7.16+ 并勾选 "Add Python to PATH"。
+
+**问题：安装后 Claude 无法识别插件**
+
+1. 确认插件文件已复制到 `%USERPROFILE%\.claude\plugins\rf-testing-plugin` (Windows) 或 `~/.claude/plugins/rf-testing-plugin` (Linux/macOS)
+2. 重启 Claude Code
+3. 重新添加 marketplace：
+   ```text
+   /plugin marketplace add <插件目录>
+   /plugin install rf-testing
+   ```
 
 ## 参考
 
