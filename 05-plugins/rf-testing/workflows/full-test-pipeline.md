@@ -242,12 +242,35 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "yapi
 
 #### script_execute(执行 RF 测试用例)
 
+**重要：Python 环境选择**
+
+执行 RF 测试前，必须先确定正确的 Python 环境：
+
+1. **读取已保存的 Python 配置**（推荐）：
+   ```bash
+   python 03-scripts/rf_config.py --get-python
+   ```
+
+2. **如果配置不存在，检测可用环境**：
+   ```bash
+   python 03-scripts/python_detector.py
+   ```
+
+3. **执行测试时必须指定 Python 路径**：
+   ```python
+   from rf_executor import execute_robot_test
+   result = execute_robot_test(
+       robot_file="test.robot",
+       python_path="/path/to/python3.7"  # 必须指定
+   )
+   ```
+
 - **脚本**: `03-scripts/rf_executor.py`
 - **函数**: `execute_robot_test()`
 - **职责**: 执行生成的 RF 测试用例，返回执行结果
 - **参数**:
-  - `robot_file`: .robot 文件路径
-  - `python_path`: Python 环境路径（可选，自动检测）
+  - `robot_file`: .robot 文件路径（必需）
+  - `python_path`: Python 环境路径（**必需**，不可省略）
   - `test_name`: 执行指定测试用例（可选）
   - `suite_name`: 执行指定测试套件（可选）
   - `output_dir`: 输出目录（默认: ./output）
@@ -257,6 +280,7 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "yapi
   - `tests`: 测试用例列表
   - `log_file`: HTML 日志文件路径
   - `report_file`: HTML 报告文件路径
+  - `python_path`: 实际使用的 Python 路径
 
 ## 工作流说明
 

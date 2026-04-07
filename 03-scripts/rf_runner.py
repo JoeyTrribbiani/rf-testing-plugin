@@ -134,22 +134,41 @@ def detect_python_for_execution(python_path: Optional[str] = None) -> Optional[s
     """
     检测或验证 Python 环境
 
+    优先级：
+    1. 用户指定的路径
+    2. 从配置文件读取的保存路径
+    3. 自动检测（优先选择 3.7.x 版本）
+
     Args:
         python_path: 用户指定的 Python 路径
 
     Returns:
         有效的 Python 路径,或 None
     """
+    # 1. 验证用户指定的路径
     if python_path:
-        # 验证用户指定的路径
         if os.path.exists(python_path):
             return python_path
         return None
 
-    # 自动检测
+    # 2. 尝试从配置文件读取
+    try:
+        from rf_config import get_python_path
+        saved_path = get_python_path()
+        if saved_path and os.path.exists(saved_path):
+            return saved_path
+    except ImportError:
+        pass
+
+    # 3. 自动检测，优先选择 3.7.x 版本
     envs = detect_python_environments()
     if envs:
-        # 优先选择第一个(根据 python_detector 的排序逻辑)
+        # 优先选择 Python 3.7.x 版本
+        for env in envs:
+            version = env.get("version", "")
+            if version.startswith("3.7"):
+                return env["python_path"]
+        # 如果没有 3.7.x，返回第一个
         return envs[0]["python_path"]
 
     return None

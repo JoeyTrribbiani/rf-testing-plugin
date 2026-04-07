@@ -123,6 +123,12 @@ install_python_deps() {
     fi
 
     log_info "Python 依赖安装完成"
+
+    # 保存 Python 环境配置
+    log_info "保存 Python 环境配置..."
+    python3 "$PLUGIN_DIR/03-scripts/rf_config.py" --set-python "$PYTHON_CMD" 2>/dev/null || {
+        log_warn "保存 Python 配置失败"
+    }
 }
 
 # 安装 JLTestLibrary（更新）
