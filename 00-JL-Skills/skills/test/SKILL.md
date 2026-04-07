@@ -1,5 +1,5 @@
 ---
-name: test
+name: rf-test
 description: 场景测试生成 - 基于需求或代码分析生成 Robot Framework 测试用例
 type: skill
 ---
