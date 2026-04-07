@@ -288,15 +288,9 @@ configure_env_and_mcp() {
 
     read -p "请输入 GITLAB_PERSONAL_ACCESS_TOKEN（可选）: " GITLAB_TOKEN
 
-    # 收集 GitHub 配置（可选）
-    echo ""
-    echo "[3/5] 配置 GitHub（可选，按 Enter 跳过）"
-    echo "----------------------------------------"
-    read -p "请输入 GITHUB_TOKEN（可选）: " GITHUB_TOKEN
-
     # 收集 YAPI 配置（可选）
     echo ""
-    echo "[4/5] 配置 YAPI（可选，按 Enter 跳过）"
+    echo "[3/5] 配置 YAPI（可选，按 Enter 跳过）"
     echo "----------------------------------------"
     read -p "请输入 YAPI_BASE_URL（YAPI 服务器地址）: " YAPI_URL
     if [[ -n "$YAPI_URL" ]]; then
@@ -316,7 +310,6 @@ configure_env_and_mcp() {
     sed -i.bak '/^export TAPD_ACCESS_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
     sed -i.bak '/^export GITLAB_API_URL=/d' "$SHELL_RC" 2>/dev/null || true
     sed -i.bak '/^export GITLAB_PERSONAL_ACCESS_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
-    sed -i.bak '/^export GITHUB_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
     sed -i.bak '/^export YAPI_BASE_URL=/d' "$SHELL_RC" 2>/dev/null || true
     sed -i.bak '/^export YAPI_TOKEN=/d' "$SHELL_RC" 2>/dev/null || true
 
@@ -327,9 +320,6 @@ configure_env_and_mcp() {
     echo "export GITLAB_API_URL=\"$GITLAB_URL\"" >> "$SHELL_RC"
     if [[ -n "$GITLAB_TOKEN" ]]; then
         echo "export GITLAB_PERSONAL_ACCESS_TOKEN=\"$GITLAB_TOKEN\"" >> "$SHELL_RC"
-    fi
-    if [[ -n "$GITHUB_TOKEN" ]]; then
-        echo "export GITHUB_TOKEN=\"$GITHUB_TOKEN\"" >> "$SHELL_RC"
     fi
     if [[ -n "$YAPI_URL" ]]; then
         echo "export YAPI_BASE_URL=\"$YAPI_URL\"" >> "$SHELL_RC"
@@ -351,18 +341,22 @@ configure_env_and_mcp() {
 {
   "mcpServers": {
     "tapd": {
-      "command": "uvx",
-      "args": ["mcp-server-tapd"],
-      "env": {
-        "TAPD_ACCESS_TOKEN": "${TAPD_TOKEN}",
-        "TAPD_API_BASE_URL": "https://api.tapd.cn",
-        "TAPD_BASE_URL": "https://www.tapd.cn"
-      }
+      "command": "mcp-server-tapd",
+      "args": ["--mode", "stdio"]
 EOF
+
+    # 判断是否有后续服务器需要添加逗号
+    if [[ -n "$GITLAB_TOKEN" ]] || [[ -n "$YAPI_URL" ]]; then
+        cat >> "$MCP_FILE" << EOF
+    }
+EOF
+    fi
 
     # 添加 GitLab 服务器（如果配置了）
     if [[ -n "$GITLAB_TOKEN" ]]; then
-        cat >> "$MCP_FILE" << EOF
+        if [[ -z "$YAPI_URL" ]]; then
+            # 如果只有 gitlab，没有 YAPI，不需要逗号
+            cat >> "$MCP_FILE" << EOF
 ,
     "gitlab": {
       "command": "npx",
@@ -373,20 +367,20 @@ EOF
       }
     }
 EOF
-    fi
-
-    # 添加 GitHub 服务器（如果配置了）
-    if [[ -n "$GITHUB_TOKEN" ]]; then
-        cat >> "$MCP_FILE" << EOF
+        else
+            # 如果还有 YAPI，需要加逗号
+            cat >> "$MCP_FILE" << EOF
 ,
-    "github": {
+    "gitlab": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "args": ["-y", "@modelcontextprotocol/server-gitlab"],
       "env": {
-        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+        "GITLAB_API_URL": "${GITLAB_URL}",
+        "GITLAB_PERSONAL_ACCESS_TOKEN": "${GITLAB_TOKEN}"
       }
     }
 EOF
+        fi
     fi
 
     # 添加 YAPI 服务器（如果配置了）
@@ -420,11 +414,6 @@ EOF
         echo "  - gitlab (GitLab 代码管理)"
     else
         echo "  - gitlab (未配置)"
-    fi
-    if [[ -n "$GITHUB_TOKEN" ]]; then
-        echo "  - github (GitHub 代码管理)"
-    else
-        echo "  - github (未配置)"
     fi
     if [[ -n "$YAPI_URL" ]]; then
         echo "  - yapi-auto-mcp (YAPI 接口文档)"
@@ -507,9 +496,6 @@ print_usage() {
     echo "  TAPD_ACCESS_TOKEN=your-tapd-token (必需)"
     echo "  GITLAB_API_URL=https://gitlab.example.com/api/v4 (可选)"
     echo "  GITLAB_PERSONAL_ACCESS_TOKEN=your-gitlab-token (可选)"
-    echo "  GITHUB_TOKEN=your-github-token (可选)"
-    echo "  YAPI_BASE_URL=https://yapi.example.com (可选)"
-    echo "  YAPI_TOKEN=projectId:token (可选)"
     echo ""
     echo "使用方式:"
     echo "  1. 配置环境变量"

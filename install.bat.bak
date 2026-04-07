@@ -237,11 +237,6 @@ if "%GITLAB_URL%"=="" set GITLAB_URL=https://gitlab.jlpay.com/api/v4
 
 set /p GITLAB_TOKEN=Enter GITLAB_TOKEN. Optional, press Enter to skip:
 
-REM Collect GitHub configuration
-echo.
-echo Configure GitHub. Optional, press Enter to skip
-set /p GITHUB_TOKEN=Enter GITHUB_TOKEN. Optional, press Enter to skip:
-
 REM Collect YAPI configuration
 echo.
 echo Configure YAPI. Optional, press Enter to skip
@@ -256,7 +251,6 @@ echo Writing system environment variables...
 setx TAPD_ACCESS_TOKEN "%TAPD_TOKEN%" >nul
 setx GITLAB_API_URL "%GITLAB_URL%" >nul
 if not "%GITLAB_TOKEN%"=="" setx GITLAB_PERSONAL_ACCESS_TOKEN "%GITLAB_TOKEN%" >nul
-if not "%GITHUB_TOKEN%"=="" setx GITHUB_TOKEN "%GITHUB_TOKEN%" >nul
 if not "%YAPI_URL%"=="" (
     setx YAPI_BASE_URL "%YAPI_URL%" >nul
     setx YAPI_TOKEN "%YAPI_TOKEN%" >nul
@@ -276,32 +270,17 @@ set JSON_TEMP=%TEMP%\mcp_config.json
 echo {> "%JSON_TEMP%"
 echo   "mcpServers": {>> "%JSON_TEMP%"
 echo     "tapd": {>> "%JSON_TEMP%"
-echo       "command": "uvx",>> "%JSON_TEMP%"
-echo       "args": ["mcp-server-tapd"],>> "%JSON_TEMP%"
-echo       "env": {>> "%JSON_TEMP%"
-echo         "TAPD_ACCESS_TOKEN": "%TAPD_TOKEN%",>> "%JSON_TEMP%"
-echo         "TAPD_API_BASE_URL": "https://api.tapd.cn",>> "%JSON_TEMP%"
-echo         "TAPD_BASE_URL": "https://www.tapd.cn">> "%JSON_TEMP%"
-echo       }>> "%JSON_TEMP%"
+echo       "command": "mcp-server-tapd",>> "%JSON_TEMP%"
+echo       "args": ["--mode", "stdio"]>> "%JSON_TEMP%"
 echo     }>> "%JSON_TEMP%"
 if not "%GITLAB_TOKEN%"=="" (
 echo     ,>> "%JSON_TEMP%"
 echo     "gitlab": {>> "%JSON_TEMP%"
-echo       "command": "npx",>> "%JSON_TEMP%"
-echo       "args": ["-y", "@modelcontextprotocol/server-gitlab"],>> "%JSON_TEMP%"
+echo       "command": "cmd",>> "%JSON_TEMP%"
+echo       "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-gitlab"],>> "%JSON_TEMP%"
 echo       "env": {>> "%JSON_TEMP%"
 echo         "GITLAB_API_URL": "%GITLAB_URL%",>> "%JSON_TEMP%"
 echo         "GITLAB_PERSONAL_ACCESS_TOKEN": "%GITLAB_TOKEN%">> "%JSON_TEMP%"
-echo       }>> "%JSON_TEMP%"
-echo     }>> "%JSON_TEMP%"
-)
-if not "%GITHUB_TOKEN%"=="" (
-echo     ,>> "%JSON_TEMP%"
-echo     "github": {>> "%JSON_TEMP%"
-echo       "command": "npx",>> "%JSON_TEMP%"
-echo       "args": ["-y", "@modelcontextprotocol/server-github"],>> "%JSON_TEMP%"
-echo       "env": {>> "%JSON_TEMP%"
-echo         "GITHUB_TOKEN": "%GITHUB_TOKEN%">> "%JSON_TEMP%"
 echo       }>> "%JSON_TEMP%"
 echo     }>> "%JSON_TEMP%"
 )
@@ -327,11 +306,6 @@ if not "%GITLAB_TOKEN%"=="" (
     echo   - gitlab (GitLab code management)
 ) else (
     echo   - gitlab (not configured)
-)
-if not "%GITHUB_TOKEN%"=="" (
-    echo   - github (GitHub code management)
-) else (
-    echo   - github (not configured)
 )
 if not "%YAPI_URL%"=="" (
     echo   - yapi-auto-mcp (YAPI API documentation)

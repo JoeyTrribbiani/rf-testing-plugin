@@ -1,5 +1,5 @@
 ---
-description: 完整 RF 测试工作流 - 从 TAPD 需求到 TAPD 导出
+description: 完整 RF 测试工作流 - 支持 TAPD 需求或 GitLab/GitHub 代码分析双模式启动
 allowed-tools: Write,Read,WebSearch,Skill,Grep,Glob,AskUserQuestion,Bash
 ---
 
@@ -8,8 +8,18 @@ flowchart TD
     start_node([开始])
     end_node([结束])
 
-    subgraph 阶段1["阶段1: 需求获取"]
+    subgraph 阶段0["阶段0: 输入选择"]
+        input_select[[用户选择输入源]]
+    end
+
+    subgraph 阶段1_TAPD["阶段1-TAPD: 需求获取"]
         mcp_fetch[[MCP: 从 TAPD 拉取需求内容]]
+    end
+
+    subgraph 阶段1_GitLab["阶段1-GitLab: 代码获取与分析"]
+        mcp_gitlab[[MCP: 从 GitLab/GitHub 获取代码]]
+        code_analysis[[代码分析 - 9步骤]]
+        change_detect[[识别改动点与范围]]
     end
 
     subgraph 阶段2["阶段2: 测试设计"]
@@ -39,8 +49,13 @@ flowchart TD
         skill_conversion[[Skill: RF 转 TAPD]]
     end
 
-    start_node --> mcp_fetch
+    start_node --> input_select
+    input_select -->|TAPD 需求| mcp_fetch
+    input_select -->|GitLab/GitHub 代码| mcp_gitlab
     mcp_fetch --> skill_scenario
+    mcp_gitlab --> code_analysis
+    code_analysis --> change_detect
+    change_detect --> skill_scenario
     skill_scenario --> skill_points
     skill_points --> mcp_yapi
     mcp_yapi --> skill_generation
@@ -53,8 +68,12 @@ flowchart TD
 
     style start_node fill:#90EE90
     style end_node fill:#FFB6C1
+    style input_select fill:#DDA0DD
     style mcp_fetch fill:#87CEEB
+    style mcp_gitlab fill:#87CEEB
     style mcp_yapi fill:#87CEEB
+    style code_analysis fill:#FFE4B5
+    style change_detect fill:#FFFACD
     style skill_scenario fill:#FFE4B5
     style skill_points fill:#FFE4B5
     style skill_generation fill:#FFE4B5
@@ -67,7 +86,26 @@ flowchart TD
 
 ## 工作流执行指南
 
+### 输入源选择
+
+工作流支持两种输入模式启动：
+
+1. **TAPD 需求模式** - 从 TAPD 拉取需求内容进行分析
+2. **GitLab/GitHub 代码模式** - 从代码仓库获取代码变更进行分析
+
+**选择逻辑**：
+- 如果用户提供 TAPD 需求链接 → 走 TAPD 分支
+- 如果用户提供 GitLab/GitHub 仓库路径和分支/Commit → 走代码分析分支
+
 ### MCP 工具节点
+
+#### input_select(输入源选择)
+
+- **描述**: 询问用户选择输入源类型
+- **交互**: "请选择输入源：1) TAPD 需求  2) GitLab/GitHub 代码分析"
+- **分支**:
+  - 选择 1 → 进入 `mcp_fetch` 节点
+  - 选择 2 → 进入 `mcp_gitlab` 节点
 
 #### mcp_fetch(MCP 自动选择) - AI 工具选择模式
 
@@ -88,6 +126,50 @@ flowchart TD
 **执行方法**:
 
 Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
+
+#### mcp_gitlab(MCP 自动选择) - AI 工具选择模式
+
+<!-- MCP_NODE_METADATA: {"mode":"aiToolSelection","serverId":"gitlab","userIntent":"从 GitLab 或 GitHub 获取指定仓库的代码。\n用户可选择指定分支（如 develop、master）或指定 commit。\n获取代码后用于分析改动点。"} -->
+
+**MCP 服务器**: gitlab
+
+**验证状态**: 有效
+
+**用户意图（自然语言任务描述）**:
+
+```
+从 GitLab 或 GitHub 获取指定仓库的代码。
+用户可选择指定分支（如 develop、master）或指定 commit。
+获取代码后用于分析改动点。
+```
+
+**参数**:
+- `project_path`: GitLab 项目路径（如 `group/project`）
+- `branch_or_commit`: 分支名或 commit SHA
+- `output_dir`: 代码输出目录（临时）
+
+**执行方法**:
+
+Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "gitlab" 获取当前工具列表。然后，选择最合适的工具，并根据任务要求确定适当的参数值。
+
+#### code_analysis(代码分析)
+
+- **描述**: 使用 analyze 指令进行完整代码分析
+- **执行方法**:
+  1. 结构分析（3步）: 技术栈 → 实体ER图 → 接口入口
+  2. 流程分析（3步）: 调用链 → 时序 → 复杂逻辑
+  3. 影响面分析（3步）: 依赖引用 → 数据影响 → 风险评估
+- **输出**: 完整代码分析报告
+
+#### change_detect(改动点识别)
+
+- **描述**: 基于代码分析结果，识别改动点和测试范围
+- **输入**: 代码分析报告、基准版本（如 main 分支）
+- **输出**:
+  - 改动点清单（改动的文件和模块）
+  - 新增/修改的接口列表
+  - 影响的业务流程
+  - 需要补充的测试点建议
 
 #### mcp_yapi(MCP 自动选择) - AI 工具选择模式
 
@@ -180,15 +262,36 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "yapi
 
 ### 执行流程
 
-1. **需求获取** - 从 TAPD 拉取需求内容
-2. **测试设计** - 识别测试场景和测试点
-3. **接口文档** - 从 YAPI 获取接口文档
-4. **用例生成** - 生成符合 RF 规范的测试用例
-5. **质量保证** - RF 质量保证 Agent 检查用例质量
-6. **规范检查** - 检查生成的用例是否符合编写规范
-7. **执行测试** - 执行 RF 测试用例并验证
-8. **结果分析** - 测试结果分析 Agent 分析质量指标
-9. **TAPD 转换** - 将 RF 用例转换为 TAPD 格式（生成 Excel）
+#### 模式 A: TAPD 需求模式
+
+1. **输入选择** - 用户选择 TAPD 需求模式
+2. **需求获取** - 从 TAPD 拉取需求内容
+3. **测试设计** - 识别测试场景和测试点
+4. **接口文档** - 从 YAPI 获取接口文档
+5. **用例生成** - 生成符合 RF 规范的测试用例
+6. **质量保证** - RF 质量保证 Agent 检查用例质量
+7. **规范检查** - 检查生成的用例是否符合编写规范
+8. **执行测试** - 执行 RF 测试用例并验证
+9. **结果分析** - 测试结果分析 Agent 分析质量指标
+10. **TAPD 转换** - 将 RF 用例转换为 TAPD 格式（生成 Excel）
+
+#### 模式 B: GitLab/GitHub 代码分析模式
+
+1. **输入选择** - 用户选择代码分析模式
+2. **代码获取** - 从 GitLab/GitHub 获取指定分支或 commit 的代码
+3. **代码分析** - 使用 analyze 指令进行完整分析
+   - 结构分析（3步）: 技术栈 → 实体ER图 → 接口入口
+   - 流程分析（3步）: 调用链 → 时序 → 复杂逻辑
+   - 影响面分析（3步）: 依赖引用 → 数据影响 → 风险评估
+4. **改动点识别** - 识别改动点和测试范围
+5. **测试设计** - 基于改动点识别测试场景和测试点
+6. **接口文档** - 从 YAPI 获取接口文档（如有）
+7. **用例生成** - 生成符合 RF 规范的测试用例
+8. **质量保证** - RF 质量保证 Agent 检查用例质量
+9. **规范检查** - 检查生成的用例是否符合编写规范
+10. **执行测试** - 执行 RF 测试用例并验证
+11. **结果分析** - 测试结果分析 Agent 分析质量指标
+12. **TAPD 转换** - 将 RF 用例转换为 TAPD 格式（生成 Excel）
 
 ### 配置参数
 
@@ -197,7 +300,14 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "yapi
   "tapd_workspace_id": "48200023",
   "output_dir": "./output",
   "creator": "测试工程师",
-  "test_case_priority": "P0,P1,P2"
+  "test_case_priority": "P0,P1,P2",
+  "gitlab": {
+    "api_url": "${GITLAB_API_URL}",
+    "token": "${GITLAB_PERSONAL_ACCESS_TOKEN}"
+  },
+  "github": {
+    "token": "${GITHUB_TOKEN}"
+  }
 }
 ```
 

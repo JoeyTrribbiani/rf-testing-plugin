@@ -142,11 +142,18 @@ install.bat   # Windows
 export TAPD_ACCESS_TOKEN="your-tapd-token"
 ```
 
-### 可选环境变量（GitLab 支持）
+### 可选环境变量（GitLab/GitHub/YAPI 支持）
 
 ```bash
+# GitLab
 export GITLAB_API_URL="https://gitlab.example.com/api/v4"
 export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
+
+# GitHub
+export GITHUB_TOKEN="your-github-token"
+
+# YAPI
+export YAPI_TOKEN="project_id:project_token"
 ```
 
 ### 手动配置详情
@@ -161,6 +168,8 @@ nano ~/.bashrc
 export TAPD_ACCESS_TOKEN="your-tapd-token"
 export GITLAB_API_URL="https://gitlab.example.com/api/v4"
 export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
+export GITHUB_TOKEN="your-github-token"
+export YAPI_TOKEN="project_id:project_token"
 
 # 使配置生效
 source ~/.bashrc
@@ -322,7 +331,10 @@ rf-testing-plugin/
 │       └── templates/       # 模板文件
 ├── 01-RF-Skills/          # RF 技能
 ├── 02-agents/             # 测试 agents
-│   └── testing-rf-quality-assurance.md
+│   ├── testing-rf-quality-assurance.md
+│   ├── testing-code-analyzer.md
+│   ├── testing-change-detector.md
+│   └── testing-results-analyzer.md
 ├── 03-scripts/            # 实用脚本和资源
 │   ├── JLTestLibrary.zip  # Robot Framework 自定义测试库
 │   ├── robot2tapd.py
@@ -373,7 +385,9 @@ rf-testing-plugin/
 | 服务器 | 用途 | 配置位置 |
 |--------|------|----------|
 | tapd | TAPD 需求获取和用例导出 | 05-plugins/rf-testing/.mcp.json |
-| gitlab | GitLab 操作（可选） | 05-plugins/rf-testing/.mcp.json |
+| gitlab | GitLab 代码获取（可选） | 05-plugins/rf-testing/.mcp.json |
+| github | GitHub 代码获取（可选） | 05-plugins/rf-testing/.mcp.json |
+| yapi-auto-mcp | YAPI 接口文档获取（可选） | 05-plugins/rf-testing/.mcp.json |
 
 ## 卸载
 

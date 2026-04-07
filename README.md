@@ -4,10 +4,12 @@
 
 ## 功能
 
-- 🔍 **需求分析**: 从 TAPD 拉取需求，识别测试场景和测试点
+- 🔍 **双模式启动**: 支持 TAPD 需求或 GitLab/GitHub 代码分析两种输入模式
+- 📊 **代码分析**: 9步骤代码深度分析（结构/流程/影响面），识别改动点和测试范围
 - 📝 **用例生成**: 基于测试点生成符合 RF 规范的用例脚本
 - ✅ **质量保证**: RF 质量保证 Agent 检查用例质量和标准合规性
 - 🔬 **规范检查**: 检查 RF 用例是否符合 JL 企业编写规范
+- 📈 **结果分析**: 测试结果分析 Agent 识别失败模式和质量趋势
 - 📊 **TAPD 转换**: 将 RF 用例转换为 TAPD 可导入格式
 - 🔄 **工作流编排**: 支持完整的测试工作流和子流程
 
@@ -53,10 +55,17 @@ chmod +x install.sh
 export TAPD_ACCESS_TOKEN="your-tapd-token"
 ```
 
-可选环境变量（如需 GitLab 支持）：
+可选环境变量（如需 GitLab/GitHub/YAPI 支持）：
 ```bash
+# GitLab
 export GITLAB_API_URL="https://gitlab.example.com/api/v4"
 export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
+
+# GitHub
+export GITHUB_TOKEN="your-github-token"
+
+# YAPI
+export YAPI_TOKEN="project_id:project_token"
 ```
 
 **Windows 手动配置：**
@@ -70,6 +79,8 @@ export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
 export TAPD_ACCESS_TOKEN="your-tapd-token"
 export GITLAB_API_URL="https://gitlab.example.com/api/v4"
 export GITLAB_PERSONAL_ACCESS_TOKEN="your-gitlab-token"
+export GITHUB_TOKEN="your-github-token"
+export YAPI_TOKEN="project_id:project_token"
 
 # 使配置生效
 source ~/.bashrc  # 或 source ~/.zshrc
@@ -139,7 +150,10 @@ rf-testing-plugin/
 ├── 00-JL-Skills/          # JL 公共库（指令、规范、模板）
 ├── 01-RF-Skills/          # RF 测试技能
 ├── 02-agents/             # 测试 agents
-│   └── testing-rf-quality-assurance.md  # RF 质量保证 agent
+│   ├── testing-rf-quality-assurance.md   # RF 质量保证 agent
+│   ├── testing-code-analyzer.md          # 代码分析 agent
+│   ├── testing-change-detector.md        # 改动点识别 agent
+│   └── testing-results-analyzer.md       # 结果分析 agent
 ├── 03-scripts/            # 实用脚本和资源
 │   ├── JLTestLibrary.zip  # Robot Framework 自定义测试库
 │   ├── robot2tapd.py
@@ -149,8 +163,11 @@ rf-testing-plugin/
 ├── 05-plugins/            # 插件目录
 │   └── rf-testing/        # rf-testing 插件
 │       ├── workflows/     # 工作流定义
+│       │   ├── full-test-pipeline.md    # 双模式工作流
+│       │   ├── requirement-to-rf.md
+│       │   └── rf-to-tapd.md
 │       ├── commands/      # 入口命令
-│       ├── .mcp.json      # MCP 配置（TAPD、GitLab）
+│       ├── .mcp.json      # MCP 配置（TAPD、GitLab、YAPI）
 │       └── README.md
 ├── docs/                  # 文档
 ├── .claude-plugin/        # Plugin 元数据
@@ -212,9 +229,25 @@ rf-testing-plugin/
 
 ## 使用方式
 
+### 双模式启动
+
+插件支持两种输入模式启动：
+
+**模式 A: TAPD 需求模式**
+```bash
+/rf-testing:start <tapd-link>
+```
+
+**模式 B: GitLab/GitHub 代码分析模式**
+```bash
+/rf-testing:start <project-path>
+```
+
+如果不传参数，插件会询问用户选择输入方式。
+
 ### 完整测试流程
 
-从 TAPD 需求到 TAPD 导出的完整流程。
+从输入到 TAPD 导出的完整流程。
 
 ```bash
 /rf-testing:start <tapd-link>
@@ -314,7 +347,9 @@ RF 用例转 TAPD 格式技能。
 | 节点 | Agent | 功能 |
 |------|-------|------|
 | agent_rf_qa | testing-rf-quality-assurance | RF 质量保证检查 |
-| agent_results | Test Results Analyzer | 测试结果分析 |
+| agent_code_analyzer | testing-code-analyzer | 代码分析（9步骤） |
+| agent_change_detector | testing-change-detector | 改动点识别 |
+| agent_results | testing-results-analyzer | 测试结果分析 |
 
 ## 实用脚本
 

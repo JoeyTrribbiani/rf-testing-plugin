@@ -5,6 +5,65 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.4.0] - 2026-04-03
+
+### 新增（Added）
+
+- 新增工作流双模式支持
+  - 支持 TAPD 需求模式启动
+  - 支持 GitLab/GitHub 代码分析模式启动
+  - 新增输入源选择节点（阶段0）
+- 新增代码分析流程（9步骤）
+  - 结构分析：技术栈 → 实体ER图 → 接口入口
+  - 流程分析：调用链 → 时序 → 复杂逻辑
+  - 影响面分析：依赖引用 → 数据影响 → 风险评估
+- 新增 3 个测试 Agent
+  - `testing-code-analyzer.md`: 代码分析 Agent
+  - `testing-change-detector.md`: 改动点识别 Agent
+  - `testing-results-analyzer.md`: 结果分析 Agent
+- 新增 4 个 Skill 定义
+  - `analyze/SKILL.md`: 代码深度解析技能
+  - `test/SKILL.md`: 场景测试生成技能
+  - `review/SKILL.md`: RF 用例审查技能
+  - `docs/SKILL.md`: 测试文档管理技能
+- 复制 ai-first-master 技能体系
+  - 15 个 instructions（analyze/test/review）
+  - 8 个 specs（COMMON_CONVENTIONS, DDD文档管家等）
+  - 16 个 templates（RF 用例、关键字、报告等）
+
+### 变更（Changed）
+
+- 更新 `.mcp.json` MCP 服务器配置
+  - TAPD: 改为使用 `uvx mcp-server-tapd` 方式
+  - GitLab: 移除 Windows 特定的 `cmd /c`，改为标准 npx 调用
+  - 新增 GitHub MCP 服务器配置
+- 更新安装脚本（`install.sh` 和 `install.bat`）
+  - 添加 GitHub Token 配置步骤（可选）
+  - 更新 MCP JSON 生成逻辑，使用新的 MCP 配置格式
+  - 添加 GitHub MCP 服务器动态配置
+- 更新 `full-test-pipeline.md` 工作流
+  - 新增阶段0：输入源选择（TAPD / GitLab / GitHub）
+  - 新增 GitLab 分支：代码获取 → 代码分析 → 改动点识别
+  - 两个分支在测试设计阶段汇合
+- 更新 `start.md` 命令入口
+  - 参数提示扩展：`[tapd-link|gitlab-project-path|github-repo-path]`
+  - 新增输入源识别逻辑
+  - 新增 GitLab/GitHub 环境检查要求
+- 更新 `README.md`
+  - 添加双模式启动说明
+  - 更新目录结构（新增 Agents）
+  - 添加 GitHub/YAPI 环境变量说明
+- 更新 `INSTALL.md`
+  - 添加 GitHub Token 配置说明
+  - 添加 YAPI Token 配置说明
+  - 更新 MCP 服务器列表
+
+### 文档（Documentation）
+
+- 新增工作流改造设计文档 `docs/superpowers/specs/2026-04-03-workflow-refactor-design.md`
+
+---
+
 ## [2.3.0] - 2026-04-02
 
 ### 新增（Added）
@@ -203,6 +262,9 @@
 
 ---
 
+[2.4.0]: https://github.com/JoeyTrribbiani/rf-testing-plugin/compare/v2.3.0...v2.4.0
+[2.3.0]: https://github.com/JoeyTrribbiani/rf-testing-plugin/compare/v2.2.0...v2.3.0
+[2.2.0]: https://github.com/JoeyTrribbiani/rf-testing-plugin/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/JoeyTrribbiani/rf-testing-plugin/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/JoeyTrribbiani/rf-testing-plugin/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/JoeyTrribbiani/rf-testing-plugin/releases/tag/v1.0.0
