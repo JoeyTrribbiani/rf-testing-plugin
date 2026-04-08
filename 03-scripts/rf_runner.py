@@ -135,8 +135,14 @@ def run_robot_command_with_env(
             # Windows: 使用 cmd /c 调用批处理
             if os.name == "nt":
                 work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
-                # 将 cmd 列表转换为正确的字符串，避免路径问题
-                cmd_str = subprocess.list2cmdline(cmd, encoding="gbk")
+                # 将 cmd 列表转换为正确的字符串，避免编码问题
+                # list2cmdline 在 Python 3.7 不支持 encoding 参数
+                try:
+                    cmd_bytes = subprocess.list2cmdline(cmd)
+                    cmd_str = cmd_bytes.decode('mbcs')
+                except (LookupError, UnicodeDecodeError):
+                    # 回退到空格连接
+                    cmd_str = " ".join(cmd)
                 # 构建 Cursor 风格的命令
                 full_cmd = [
                     "cmd", "/c",
