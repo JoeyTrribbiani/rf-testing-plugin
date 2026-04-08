@@ -11,17 +11,31 @@
 
 - 优化 GitLab 代码分析模式的工作流设计
 
-- 修正 script_execute 节点执行方式
+- 修复 rf_runner.py 导入错误和中文路径问题
+  - 问题: `detect_python_environments` 函数不存在，中文路径显示为乱码
+  - 原因: 函数名错误（应为 `detect_all_python_environments`），命令编码处理不当
+  - 修复:
+    - 修正导入函数名为 `detect_all_python_environments`
+    - 使用 `subprocess.list2cmdline` 转换命令，正确处理中文路径
+    - 环境脚本使用 UTF-8 编码并添加 `chcp 65001` 支持中文
+  - 涉及文件:
+    - `03-scripts/rf_runner.py`
+    - `03-scripts/rf_env_builder.py`
+
+- 修正 script_execute 和 script_validate 节点执行方式
   - 问题: AI 没有正确理解如何执行 RF 测试，直接使用 Bash + conda activate
   - 原因: 工作流中没有明确使用 Skill 工具调用命令
   - 修复: 明确 AI 应该使用 Skill 工具调用 `/rf-testing:execute` 命令
   - 不要直接使用 Bash 工具执行 robot 命令
+  - 涉及文件:
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
 
-- 修正插件路径问题
-  - 问题: 工作目录可能不在插件目录，直接使用相对路径找不到脚本
-  - 原因: execute 命令和工作流中使用相对路径 `03-scripts/`
-  - 修复: 使用 `${CLAUDE_PLUGIN_ROOT}` 变量引用插件根目录
-  - 更新 script_validate 节点也使用命令方式执行
+- 添加 RF 测试用例执行命令
+  - 命令: `/rf-testing:execute <robot-file> [选项]`
+  - 支持完整执行、dryrun 验证、指定用例、标签过滤等参数
+  - 动态检查脚本路径，支持不同插件配置
+  - 涉及文件:
+    - `05-plugins/rf-testing/commands/execute.md` (新增)
 
 - 优化 GitLab 代码分析模式的工作流设计
   - 问题: YAPI 接口文档获取位置不合理，导致请求的接口详情不正确
