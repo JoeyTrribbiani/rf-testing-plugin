@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "rf-testing",
-      "source": "./05-plugins/rf-testing",
+      "source": ".",
       "description": "基于 TAPD 需求的 Robot Framework 测试用例生成与转换插件，提供完整测试工作流。",
       "version": "1.0.0",
       "author": {
