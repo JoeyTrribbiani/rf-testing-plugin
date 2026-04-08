@@ -8,15 +8,23 @@ import argparse
 import subprocess
 import sys
 import os
+import importlib.util
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 
-# 添加 scripts 目录到 Python 路径
-SCRIPT_DIR = Path(__file__).parent
+# 确保脚本目录在 Python 路径中（使用 __file__ 的绝对路径）
+SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
-from python_detector import detect_python_environments
-from rf_env_builder import RFEnvBuilder
+# 尝试直接导入模块（使用 sys.path）
+try:
+    from python_detector import detect_all_python_environments
+    from rf_env_builder import RFEnvBuilder
+except ImportError as e:
+    print(f"Error importing modules: {e}")
+    print(f"SCRIPT_DIR: {SCRIPT_DIR}")
+    print(f"sys.path: {sys.path}")
+    sys.exit(1)
 
 
 def build_robot_command(
@@ -221,7 +229,7 @@ def detect_python_for_execution(python_path: Optional[str] = None) -> Optional[s
         pass
 
     # 3. 自动检测，优先选择 Python 3.7.x 版本
-    envs = detect_python_environments()
+    envs = detect_all_python_environments()
     if envs:
         for env in envs:
             version = env.get("version", "")
