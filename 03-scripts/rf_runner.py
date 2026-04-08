@@ -134,12 +134,13 @@ def run_robot_command_with_env(
         if env_script and os.path.exists(env_script):
             # Windows: 使用 cmd /c 调用批处理
             if os.name == "nt":
-                # 构建 Cursor 风格的命令
-                # cmd /c "cd work_dir && call env_script && python -m robot ..."
                 work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
+                # 将 cmd 列表转换为正确的字符串，避免路径问题
+                cmd_str = subprocess.list2cmdline(cmd, encoding="gbk")
+                # 构建 Cursor 风格的命令
                 full_cmd = [
                     "cmd", "/c",
-                    f'cd /d "{work_dir}" && call "{env_script}" && {" ".join(cmd)}'
+                    f'cd /d "{work_dir}" && call "{env_script}" && {cmd_str}'
                 ]
                 process = subprocess.Popen(
                     full_cmd,

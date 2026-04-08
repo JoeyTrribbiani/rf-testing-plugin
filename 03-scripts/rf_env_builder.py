@@ -39,8 +39,8 @@ class RFEnvBuilder:
             pass
 
         # 自动检测
-        from python_detector import detect_python_environments
-        envs = detect_python_environments()
+        from python_detector import detect_all_python_environments
+        envs = detect_all_python_environments()
         if envs:
             return envs[0]["python_path"]
 
@@ -95,6 +95,7 @@ class RFEnvBuilder:
         site_packages = self.get_site_packages()
 
         batch_content = f"""@echo off
+chcp 65001 > nul
 REM Robot Framework 临时环境
 REM 工作目录: {work_dir}
 
@@ -117,7 +118,7 @@ REM 额外的环境变量
             for key, value in extra_vars.items():
                 batch_content += f'set {key}={value}\n'
 
-        # 写入临时文件
+        # 写入临时文件（使用 UTF-8 编码）
         temp_dir = Path(tempfile.gettempdir()) / "rf-ls-run"
         temp_dir.mkdir(exist_ok=True)
 
@@ -127,7 +128,7 @@ REM 额外的环境变量
         file_id = f"{int(time.time())}_{random.randint(10000, 99999)}"
         batch_file = temp_dir / f"run_env_{file_id}.bat"
 
-        with open(batch_file, "w", encoding="gbk") as f:
+        with open(batch_file, "w", encoding="utf-8") as f:
             f.write(batch_content)
 
         return str(batch_file)
