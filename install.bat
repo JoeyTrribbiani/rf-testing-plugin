@@ -7,6 +7,95 @@ set PLUGIN_DIR=%~dp0
 echo [INFO] Start installing %PLUGIN_NAME%...
 echo.
 
+REM ============================================
+REM Step 1: Copy plugin files to Claude directory FIRST
+REM ============================================
+echo [INFO] ====================================
+echo [INFO] Step 1: Installing plugin files
+echo [INFO] ====================================
+echo.
+
+REM Copy plugin files to Claude plugins directory
+set CLAUDE_PLUGINS_DIR=%USERPROFILE%\.claude\plugins\rf-testing-plugin
+
+echo [INFO] Copying plugin files to: %CLAUDE_PLUGINS_DIR%
+
+REM Clean up existing directory if it exists
+if exist "%CLAUDE_PLUGINS_DIR%" (
+    echo [WARN] Plugin directory already exists
+    choice /C YN /M "Delete and re-copy (Y/N)"
+    if errorlevel 2 (
+        echo [INFO] Skip copy step
+        goto check_prerequisites
+    )
+    echo [INFO] Deleting existing directory...
+    rmdir /s /q "%CLAUDE_PLUGINS_DIR%"
+)
+
+if exist "%CLAUDE_PLUGINS_DIR%" (
+    echo [ERROR] Directory still exists, cannot copy
+    echo [INFO] Please delete manually or choose to delete
+    exit /b 1
+)
+
+if not exist "%USERPROFILE%\.claude\plugins\" (
+    mkdir "%USERPROFILE%\.claude\plugins\"
+)
+
+REM Copy all plugin files using robocopy (excluding .claude and .git)
+echo [DEBUG] Source: "%PLUGIN_DIR%"
+echo [DEBUG] Target: "%CLAUDE_PLUGINS_DIR%"
+echo [DEBUG] Excluding: .claude, .git
+
+REM Use robocopy with /XD to exclude directories
+echo [INFO] Copying files with robocopy...
+
+REM Remove trailing backslash from PLUGIN_DIR to avoid escape issues
+set "SRC_DIR=%PLUGIN_DIR%"
+if "%SRC_DIR:~-1%"=="\" set "SRC_DIR=%SRC_DIR:~0,-1%"
+
+robocopy "%SRC_DIR%" "%CLAUDE_PLUGINS_DIR%" /E /XD .claude .git /R:0 /W:0 > nul 2>&1
+
+REM Check robocopy exit code (0-7 are success codes)
+if %ERRORLEVEL% LEQ 7 (
+    echo [INFO] Plugin files copied successfully
+) else (
+    echo [ERROR] Copy failed with code %ERRORLEVEL%. Please manually copy files from:
+    echo   %PLUGIN_DIR%
+    echo to:
+    echo   %CLAUDE_PLUGINS_DIR%
+)
+
+REM ============================================
+REM Step 1.5: Clear plugin cache
+REM ============================================
+echo [INFO] ====================================
+echo [INFO] Step 1.5: Clearing plugin cache
+echo [INFO] ====================================
+echo.
+
+set CLAUDE_CACHE_DIR=%USERPROFILE%\.claude\plugins\cache\rf-testing-plugin
+
+if exist "%CLAUDE_CACHE_DIR%" (
+    echo [INFO] Found plugin cache directory: %CLAUDE_CACHE_DIR%
+    echo [INFO] Clearing cache...
+    rmdir /s /q "%CLAUDE_CACHE_DIR%" >nul 2>&1
+    if exist "%CLAUDE_CACHE_DIR%" (
+        echo [WARN] Failed to clear cache, please restart Claude to refresh
+    ) else (
+        echo [INFO] Plugin cache cleared successfully
+    )
+) else (
+    echo [INFO] No plugin cache found, skip clearing
+)
+
+echo.
+
+:check_prerequisites
+REM ============================================
+REM Step 2: Check prerequisites
+REM ============================================
+
 REM Check Python
 where python >nul 2>&1
 if errorlevel 1 (
@@ -39,7 +128,7 @@ echo [INFO] Detecting Python environment...
 python "%PLUGIN_DIR%\03-scripts\python_detector.py" --format json > "%TEMP%\env_detection.json" 2>nul
 
 if errorlevel 1 (
-    echo [ERROR] Python environment detection failed
+    echo [WARN] Python environment detection failed
     echo [INFO] Using system Python
     set PYTHON_CMD=python
     set PIP_CMD=pip
@@ -47,7 +136,10 @@ if errorlevel 1 (
 )
 
 echo.
-python "%PLUGIN_DIR%\03-scripts\python_detector.py"
+python "%PLUGIN_DIR%\03-scripts\python_detector.py" 2>nul
+if errorlevel 1 (
+    echo [WARN] Failed to display Python environments, but will continue installation
+)
 echo.
 
 set /p PYTHON_CHOICE="Select Python environment (enter number or press Enter for default) "
@@ -149,7 +241,7 @@ if not errorlevel 1 (
 
 REM Display site-packages options
 echo.
-"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --python-path "%PYTHON_CMD%"
+"%PYTHON_CMD%" "%PLUGIN_DIR%\03-scripts\python_detector.py" --site-packages --python-path "%PYTHON_CMD%" 2>nul
 echo.
 
 set /p SP_CHOICE="Select target directory (enter number or press Enter for default) "
@@ -189,8 +281,11 @@ echo.
 
 :configure_mcp
 echo [INFO] ====================================
-echo [INFO] Plugin installed to local directory
+echo [INFO] Configuring MCP servers
 echo [INFO] ====================================
+echo.
+
+echo [INFO] Plugin files were already copied in Step 1
 echo.
 echo [INFO] To let Claude Code recognize this plugin, run in Claude Code:
 echo.
@@ -251,6 +346,27 @@ if not "%YAPI_URL%"=="" (
 )
 echo [INFO] Environment variables written
 
+REM Detect uvx path for MCP configuration
+echo.
+echo [INFO] Detecting uvx path...
+set "UVX_PATH="
+for /f "delims=" %%i in ('where uvx 2^>nul') do set "UVX_PATH=%%i"
+if not defined UVX_PATH (
+    if exist "%USERPROFILE%\.local\bin\uvx.exe" set "UVX_PATH=%USERPROFILE%\.local\bin\uvx.exe"
+    if exist "%USERPROFILE%\.cargo\bin\uvx.exe" set "UVX_PATH=%USERPROFILE%\.cargo\bin\uvx.exe"
+)
+if not defined UVX_PATH (
+    echo [WARN] uvx not found in PATH
+    echo [INFO] Please install uv first:
+    echo   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 ^| iex"
+    echo.
+    echo [INFO] MCP configuration will use "uvx" as command. You may need to manually update
+    echo         the command path in %%USERPROFILE%%\.claude\mcp.json after installing uv.
+    set "UVX_PATH=uvx"
+) else (
+    echo [INFO] Found uvx at: %UVX_PATH%
+)
+
 REM Create MCP configuration
 echo.
 echo Configuring Claude MCP servers...
@@ -264,7 +380,7 @@ set JSON_TEMP=%TEMP%\mcp_config.json
 echo {> "%JSON_TEMP%"
 echo   "mcpServers": {>> "%JSON_TEMP%"
 echo     "tapd": {>> "%JSON_TEMP%"
-echo       "command": "uvx",>> "%JSON_TEMP%"
+echo       "command": "%UVX_PATH:\=\\%",>> "%JSON_TEMP%"
 echo       "args": ["mcp-server-tapd"],>> "%JSON_TEMP%"
 echo       "env": {>> "%JSON_TEMP%"
 echo         "TAPD_ACCESS_TOKEN": "%TAPD_TOKEN%",>> "%JSON_TEMP%"

@@ -13,12 +13,7 @@
     ...    result - 返回值说明
     [Arguments]    ${arg1}    ${arg2}
     [Tags]    <tag1>    <tag2>
-    [Return]    ${result}
-
-    # 关键字实现
     ${result}    Some Operation    ${arg1}    ${arg2}
-
-    # 返回结果
     [Return]    ${result}
 ```
 
@@ -55,16 +50,22 @@
 明确返回值，支持以下写法：
 
 ```robotframework
-# 单个返回值
+# 单个返回值（只能在关键字末尾使用一次）
 [Return]    ${result}
 
-# 多个返回值
+# 多个返回值（只能在关键字末尾使用一次）
 [Return]    ${value1}    ${value2}
 
-# 返回字典
+# 返回字典（只能在关键字末尾使用一次）
 ${result}    Create Dictionary    key1=${value1}    key2=${value2}
 [Return]    ${result}
 ```
+
+**重要注意事项**：
+- [Return] 只能在关键字末尾使用一次
+- [Return] 不能出现在 [Arguments] 之后
+- [Return] 不能出现在 [Tags] 之后
+- 如果关键字不需要返回值，则不使用 [Return]
 
 ## 关键字分类
 
@@ -80,17 +81,9 @@ ${result}    Create Dictionary    key1=${value1}    key2=${value2}
     ...    merchant_detail - 商户详情字典
     [Arguments]    ${merchant_no}
     [Tags]    query    merchant
-
-    # 调用查询接口
     ${resp}    商户查询接口    ${merchant_no}
-
-    # 校验响应
     Resp Dict Compare    ${resp}
-
-    # 提取数据
     ${detail}    Resp Dict Value    $.data
-
-    # 返回结果
     [Return]    ${detail}
 ```
 
@@ -107,19 +100,9 @@ ${result}    Create Dictionary    key1=${value1}    key2=${value2}
     ...    result - 变更结果
     [Arguments]    ${merchant_no}    ${target_status}
     [Tags]    update    merchant
-
-    # 准备请求数据
-    ${req_data}    Create Dictionary
-    ...    merchant_no=${merchant_no}
-    ...    status=${target_status}
-
-    # 调用变更接口
+    ${req_data}    Create Dictionary    merchant_no=${merchant_no}    status=${target_status}
     ${resp}    商户状态变更接口    ${req_data}
-
-    # 校验响应
     Resp Dict Compare    ${resp}
-
-    # 返回结果
     [Return]    ${resp}
 ```
 
@@ -136,22 +119,10 @@ ${result}    Create Dictionary    key1=${value1}    key2=${value2}
     ...    merchant_no - 生成的商户号
     [Arguments]    ${merchant_type}=normal    ${status}=active
     [Tags]    data    merchant
-
-    # 生成商户号
     ${merchant_no}    Generate Merchant No
-
-    # 调用创建接口
-    ${req_data}    Create Dictionary
-    ...    merchant_no=${merchant_no}
-    ...    type=${merchant_type}
-    ...    status=${status}
-
+    ${req_data}    Create Dictionary    merchant_no=${merchant_no}    type=${merchant_type}    status=${status}
     ${resp}    创建商户接口    ${req_data}
-
-    # 校验创建成功
     Resp Dict Compare    ${resp}
-
-    # 返回商户号
     [Return]    ${merchant_no}
 ```
 
@@ -166,14 +137,8 @@ ${result}    Create Dictionary    key1=${value1}    key2=${value2}
     ...    expected_status - 预期状态
     [Arguments]    ${merchant_no}    ${expected_status}
     [Tags]    assertion
-
-    # 查询商户信息
     ${resp}    查询商户信息    ${merchant_no}
-
-    # 提取状态
     ${actual_status}    Resp Dict Value    $.data.status
-
-    # 断言
     Should Be Equal    ${actual_status}    ${expected_status}
 ```
 
@@ -186,14 +151,8 @@ ${result}    Create Dictionary    key1=${value1}    key2=${value2}
 创建并校验商户
     [Documentation]    创建商户并校验创建成功
     [Arguments]    ${merchant_type}
-
-    # 复用其他关键字
     ${merchant_no}    创建测试商户    ${merchant_type}
-
-    # 校验商户信息
     ${detail}    查询商户信息    ${merchant_no}
-
-    # 返回结果
     [Return]    ${detail}
 ```
 
@@ -204,14 +163,8 @@ ${result}    Create Dictionary    key1=${value1}    key2=${value2}
 安全查询商户
     [Documentation]    安全地查询商户，处理可能的异常
     [Arguments]    ${merchant_no}
-
-    ${result}    Run Keyword And Return Status
-    ...    查询商户信息    ${merchant_no}
-
-    Run Keyword If    '${result}' == 'PASS'
-    ...    Log    查询成功
-    ...    ELSE
-    ...    Log    查询失败: ${result}
+    ${result}    Run Keyword And Return Status    查询商户信息    ${merchant_no}
+    Run Keyword If    '${result}' == 'PASS'    Log    查询成功    ELSE    Log    查询失败: ${result}
 ```
 
 ## 命名规范
@@ -251,6 +204,36 @@ CreateMerchant    # ✅ 推荐
 ```
 
 ## 禁止事项
+
+### 不要重复定义关键字
+
+```robotframework
+# ❌ 错误：重复定义
+商户查询接口
+    [Documentation]    查询商户信息
+    [Arguments]    ${merchant_no}
+    ${resp}    GET    /api/merchant    ${merchant_no}
+    [Return]    ${resp}
+
+商户查询接口    # 重复定义
+    [Documentation]    查询商户信息（重复）
+    [Arguments]    ${merchant_no}
+    ${resp}    GET    /api/merchant/${merchant_no}
+    [Return]    ${resp}
+
+# ✅ 正确：使用不同名称或参数区分
+商户查询接口
+    [Documentation]    查询商户信息
+    [Arguments]    ${merchant_no}
+    ${resp}    GET    /api/merchant    ${merchant_no}
+    [Return]    ${resp}
+
+商户详情查询接口
+    [Documentation]    查询商户详情
+    [Arguments]    ${merchant_id}
+    ${resp}    GET    /api/merchant/${merchant_id}
+    [Return]    ${resp}
+```
 
 ### 不要重复实现 BuiltIn 功能
 
@@ -303,6 +286,43 @@ CreateMerchant    # ✅ 推荐
     [Arguments]    ${input}
 ```
 
+### 不要在关键字末尾多次使用 [Return]
+
+```robotframework
+# ❌ 错误：[Return] 多次出现
+商户查询接口
+    [Arguments]    ${merchant_no}
+    ${resp}    GET    /api/merchant    ${merchant_no}
+    [Return]    ${resp}    # 第一个 [Return]
+    ${data}    Resp Dict Value    $.data
+    [Return]    ${data}    # 第二个 [Return]，会报错
+
+# ✅ 正确：只在末尾使用一次 [Return]
+商户查询接口
+    [Arguments]    ${merchant_no}
+    ${resp}    GET    /api/merchant    ${merchant_no}
+    ${data}    Resp Dict Value    $.data
+    [Return]    ${data}    # 只在末尾使用一次
+```
+
+### 不要在 [Arguments] 或 [Tags] 之后立即使用 [Return]
+
+```robotframework
+# ❌ 错误：[Return] 位置错误
+商户查询接口
+    [Documentation]    查询商户信息
+    [Arguments]    ${merchant_no}
+    [Return]    ${resp}    # 错误位置
+    ${resp}    GET    /api/merchant    ${merchant_no}
+
+# ✅ 正确：[Return] 在关键字末尾
+商户查询接口
+    [Documentation]    查询商户信息
+    [Arguments]    ${merchant_no}
+    ${resp}    GET    /api/merchant    ${merchant_no}
+    [Return]    ${resp}    # 正确位置
+```
+
 ## 参数校验示例
 
 ```robotframework
@@ -310,22 +330,13 @@ CreateMerchant    # ✅ 推荐
 带参数校验的关键字
     [Documentation]    关键字功能，包含参数校验
     [Arguments]    ${param1}    ${param2}
-
-    # 校验参数非空
     Should Not Be Empty    ${param1}
     Should Not Be Empty    ${param2}
-
-    # 校验参数类型
     ${is_string}    Is Instance    ${param1}    str
     Should Be True    ${is_string}
-
-    # 校验参数范围
     ${is_valid}    Validate Range    ${param2}    1    100
     Should Be True    ${is_valid}
-
-    # 执行主要逻辑
     ${result}    Main Operation    ${param1}    ${param2}
-
     [Return]    ${result}
 ```
 
@@ -344,10 +355,8 @@ CreateMerchant    # ✅ 推荐
     ...    response - 响应对象
     [Arguments]    ${url}    ${headers}=${EMPTY}
     [Tags]    http    request
-
     Create Session    api_session
     ${response}    GET On Session    api_session    ${url}    headers=${headers}
-
     [Return]    ${response}
 
 
@@ -361,10 +370,8 @@ CreateMerchant    # ✅ 推荐
     ...    response - 响应对象
     [Arguments]    ${url}    ${data}    ${headers}=${EMPTY}
     [Tags]    http    request
-
     Create Session    api_session
     ${response}    POST On Session    api_session    ${url}    json=${data}    headers=${headers}
-
     [Return]    ${response}
 ```
 
@@ -381,9 +388,7 @@ CreateMerchant    # ✅ 推荐
     ...    value - 字段值
     [Arguments]    ${response}    ${jsonpath}
     [Tags]    jsonpath    extract
-
     ${value}    Resp Dict Value    ${jsonpath}
-
     [Return]    ${value}
 
 
@@ -396,15 +401,11 @@ CreateMerchant    # ✅ 推荐
     ...    values - 字段值列表
     [Arguments]    ${response}    ${jsonpath}
     [Tags]    jsonpath    extract
-
     ${values}    Resp Dict Value    ${jsonpath}
-
-    # 处理单元素数组问题
     ${is_list}    Evaluate    isinstance(${values}, list)
     ${result}    Run Keyword If    ${is_list}
     ...    Set Variable    ${values}
     ...    ELSE
     ...    Create List    ${values}
-
     [Return]    ${result}
 ```

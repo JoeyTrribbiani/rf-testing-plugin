@@ -1,47 +1,87 @@
 ---
-description: 启动 RF 测试工作流 - 支持 TAPD 需求或 GitLab/GitHub 代码分析
-argument-hint: [tapd-link|gitlab-project-path|github-repo-path]
+description: 启动 RF 测试工作流 - 自动识别 TAPD 需求或 GitLab/GitHub 代码分析
+argument-hint: [tapd-link|gitlab-url|github-url|project-path]
 ---
 
-使用插件内置的测试工作流处理当前任务。
+## 输入源自动检测
 
-工作流定义：
-@${CLAUDE_PLUGIN_ROOT}/workflows/full-test-pipeline.md
+首先检测用户输入的类型，然后执行相应流程。
 
-子工作流：
-- requirement-to-rf: 仅需求转 RF 用例
-- rf-to-tapd: 仅 RF 转 TAPD 格式
+**步骤 1: 输入源检测**
 
-安装与配置说明：
-@${CLAUDE_PLUGIN_ROOT}/README.md
+根据参数内容自动检测：
 
-执行要求：
+```python
+# 检测逻辑
+user_input = "<用户输入的参数>"
 
-**输入源识别逻辑**：
-- 如果参数是 TAPD 链接（包含 tapd.cn）→ 走 TAPD 需求模式
-- 如果参数是 GitLab 项目路径（格式如 group/project）→ 走代码分析模式
-- 如果参数是 GitHub 仓库路径（格式如 owner/repo）→ 走代码分析模式
-- 如果没有传入参数，询问用户选择输入方式：
-  1. TAPD 需求链接
-  2. GitLab/GitHub 代码分析
+if "tapd.cn" in user_input or "www.tapd" in user_input:
+    mode = "TAPD"
+    # 提取 workspace_id 和 story_id
+    workspace_id = user_input.split("/")[4]  # 48200023
+    story_id = user_input.split("/")[-1]     # 1148200023001077267
+    print(f"检测到 TAPD 需求链接，workspace_id={workspace_id}, story_id={story_id}")
 
-**TAPD 模式要求**：
-- 确认 `tapd` MCP 可用（检查 TAPD_ACCESS_TOKEN）
-- 如果 MCP 无法鉴权，明确提示用户检查环境变量
+elif "gitlab" in user_input:
+    mode = "GitLab"
+    # 提取项目路径
+    project_path = user_input.replace("https://", "").split("/", 1)[1] if "://" in user_input else user_input
+    git_base_url = user_input.split("/")[2] if "://" in user_input else "gitlab.jlpay.com"
+    print(f"检测到 GitLab 项目路径: {project_path}, 基地址: {git_base_url}")
 
-**GitLab 模式要求**：
-- 确认 `gitlab` MCP 可用（检查 GITLAB_API_URL 和 GITLAB_PERSONAL_ACCESS_TOKEN）
-- 获取项目路径、分支名或 commit SHA
-- 如果 MCP 无法鉴权，明确提示用户检查环境变量
+elif "github.com" in user_input:
+    mode = "GitHub"
+    # 提取项目路径
+    project_path = user_input.replace("https://", "").split("/", 1)[1] if "://" in user_input else user_input
+    print(f"检测到 GitHub 项目路径: {project_path}")
 
-**GitHub 模式要求**：
-- 确认 `github` MCP 可用（检查 GITHUB_TOKEN）
-- 获取仓库路径、分支名或 commit SHA
-- 如果 MCP 无法鉴权，明确提示用户检查环境变量
+else:
+    mode = "UNKNOWN"
+    print("无法识别输入类型，请提供:")
+    print("  1. TAPD 需求链接 (如 https://www.tapd.cn/...)")
+    print("  2. GitLab 项目链接 (如 https://gitlab.jlpay.com/...)")
+    print("  3. GitHub 仓库链接 (如 https://github.com/...)")
+```
 
-然后严格按照内置工作流继续执行。
+**步骤 2: 根据模式执行**
 
-命令示例：
-/rf-testing:start https://www.tapd.cn/48200023/prong/stories/view/1148200023001077267
-/rf-testing:start mygroup/myproject
-/rf-testing:start owner/repo
+### TAPD 模式
+- 工作流: `@${CLAUDE_PLUGIN_ROOT}/workflows/requirement-to-rf.md`
+- 环境变量: `TAPD_ACCESS_TOKEN`
+- 执行:
+  1. 从 TAPD 拉取需求内容
+  2. 识别测试场景和测试点
+  3. 生成 RF 测试用例
+  4. RF 质量保证与自动修复
+  5. 执行验证 (dryrun)
+  6. 质量门禁判断
+  7. 执行测试
+  8. 结果分析
+  9. 转换为 TAPD 格式
+
+### GitLab 模式
+- 工作流: `@${CLAUDE_PLUGIN_ROOT}/workflows/full-test-pipeline.md` (GitLab 分支)
+- 环境变量: `GITLAB_API_URL`, `GITLAB_PERSONAL_ACCESS_TOKEN`
+- 执行:
+  1. 使用 git clone 获取代码
+  2. 代码分析 (9步骤: 结构→流程→影响面)
+  3. 改动点识别
+  4. 识别测试场景和测试点
+  5. 生成 RF 测试用例
+  6. RF 质量保证与自动修复
+  7. 执行验证 (dryrun)
+  8. 质量门禁判断
+  9. 执行测试
+  10. 结果分析
+  11. 转换为 TAPD 格式
+
+### GitHub 模式
+- 工作流: `@${CLAUDE_PLUGIN_ROOT}/workflows/full-test-pipeline.md` (GitHub 分支)
+- 环境变量: `GITHUB_TOKEN`
+- 执行: 与 GitLab 模式类似，但使用 GitHub MCP 服务器
+
+## 当前输入
+
+用户输入: `<用户输入>`
+
+请执行上述检测逻辑，确定模式后继续执行对应流程。

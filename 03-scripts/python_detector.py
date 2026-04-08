@@ -101,14 +101,17 @@ def get_python_version(python_path: str) -> Optional[Tuple[int, int, int]]:
         result = subprocess.run(
             [python_path, "--version"],
             capture_output=True,
-            text=True,
             timeout=5
         )
         # 检查命令是否成功
         if result.returncode != 0:
             return None
-        # 版本信息在 stderr
-        version_string = (result.stderr or "").strip() or (result.stdout or "").strip()
+        # 版本信息在 stderr (Python 2) 或 stdout (Python 3)
+        version_bytes = result.stderr or result.stdout
+        if not version_bytes:
+            return None
+        # 使用 utf-8 解码，忽略错误
+        version_string = version_bytes.decode('utf-8', errors='ignore').strip()
         if not version_string:
             return None
         return parse_python_version(version_string)
@@ -138,14 +141,15 @@ def detect_conda_envs() -> List[PythonEnvironment]:
         result = subprocess.run(
             [conda_cmd, 'env', 'list'],
             capture_output=True,
-            text=True,
             timeout=30
         )
+        # 解码输出，忽略编码错误
+        stdout_text = result.stdout.decode('utf-8', errors='ignore') if result.stdout else ''
     except (subprocess.TimeoutExpired, OSError):
         return envs
 
     # 解析环境列表
-    for line in result.stdout.split('\n'):
+    for line in stdout_text.split('\n'):
         line = line.strip()
         if not line or line.startswith('#'):
             continue
@@ -376,12 +380,13 @@ def get_site_packages_paths(python_path: str) -> List[str]:
         result = subprocess.run(
             [python_path, "-c", "import site; print('\\n'.join(site.getsitepackages()))"],
             capture_output=True,
-            text=True,
             timeout=10
         )
 
         if result.returncode == 0:
-            paths = result.stdout.strip().split('\n')
+            # 解码输出，忽略编码错误
+            stdout_text = result.stdout.decode('utf-8', errors='ignore') if result.stdout else ''
+            paths = stdout_text.strip().split('\n')
             return [p for p in paths if p and os.path.isdir(p)]
     except (subprocess.TimeoutExpired, OSError):
         pass

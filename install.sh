@@ -13,6 +13,7 @@ NC='\033[0m' # No Color
 # 插件配置
 PLUGIN_NAME="rf-testing-plugin"
 PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+CLAUDE_PLUGINS_DIR="$HOME/.claude/plugins/$PLUGIN_NAME"
 
 # 日志函数
 log_info() {
@@ -128,6 +129,16 @@ install_python_deps() {
     log_info "保存 Python 环境配置..."
     python3 "$PLUGIN_DIR/03-scripts/rf_config.py" --set-python "$PYTHON_CMD" 2>/dev/null || {
         log_warn "保存 Python 配置失败"
+    }
+    # 保存完整的 Python 环境信息
+    python3 "$PLUGIN_DIR/03-scripts/rf_config.py" --set-python "$PYTHON_CMD" 2>/dev/null || {
+        # 尝试使用 rf_config.py 模块接口保存完整信息
+        python3 -c "
+import sys
+sys.path.insert(0, '$PLUGIN_DIR/03-scripts')
+from rf_config import set_python_info
+set_python_info('$PYTHON_CMD', '$SELECTED_PYTHON_VERSION', '$PIP_CMD', 'conda')
+" 2>/dev/null || log_warn "保存完整 Python 信息失败"
     }
 }
 
@@ -329,9 +340,30 @@ configure_env_and_mcp() {
         echo "export YAPI_TOKEN=\"$YAPI_TOKEN\"" >> "$SHELL_RC"
     fi
 
-    # 创建 MCP 配置
+    # 检测 uvx 路径
     echo ""
     echo "[5/5] 配置 Claude MCP 服务器..."
+
+    UVX_PATH=$(command -v uvx 2>/dev/null || echo "")
+    if [[ -z "$UVX_PATH" ]]; then
+        if [[ -f "$HOME/.local/bin/uvx" ]]; then
+            UVX_PATH="$HOME/.local/bin/uvx"
+        elif [[ -f "$HOME/.cargo/bin/uvx" ]]; then
+            UVX_PATH="$HOME/.cargo/bin/uvx"
+        fi
+    fi
+
+    if [[ -z "$UVX_PATH" ]]; then
+        log_warn "uvx not found in PATH"
+        log_info "Please install uv first:"
+        log_info "  curl -LsSf https://astral.sh/uv/install.sh | sh"
+        echo
+        log_info "MCP configuration will use \"uvx\" as command. You may need to manually update"
+        log_info "the command path in ~/.claude/mcp.json after installing uv."
+        UVX_PATH="uvx"
+    else
+        log_info "Found uvx at: $UVX_PATH"
+    fi
 
     CLAUDE_CONFIG_DIR="$HOME/.claude"
     MCP_FILE="$CLAUDE_CONFIG_DIR/mcp.json"
@@ -344,7 +376,7 @@ configure_env_and_mcp() {
 {
   "mcpServers": {
     "tapd": {
-      "command": "uvx",
+      "command": "$UVX_PATH",
       "args": ["mcp-server-tapd"],
       "env": {
         "TAPD_ACCESS_TOKEN": "${TAPD_TOKEN}",
@@ -514,6 +546,9 @@ print_usage() {
 main() {
     log_info "开始安装 $PLUGIN_NAME..."
 
+    # Step 1: 复制插件文件
+    copy_plugin_files
+
     # 检查环境
     check_command git
     check_python_environment  # 替换原有的 python3/pip3 检查
@@ -539,6 +574,74 @@ main() {
         log_error "安装验证失败，请检查上述错误"
         exit 1
     fi
+}
+
+# 复制插件文件到 Claude 目录（Step 1）
+copy_plugin_files() {
+    log_info "===================================="
+    log_info "Step 1: 安装插件文件"
+    log_info "===================================="
+    echo ""
+
+    log_info "复制插件文件到: $CLAUDE_PLUGINS_DIR"
+
+    # 检查目标目录是否已存在
+    if [ -d "$CLAUDE_PLUGINS_DIR" ]; then
+        log_warn "插件目录已存在: $CLAUDE_PLUGINS_DIR"
+        read -p "是否删除并重新复制？(y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            log_info "删除现有目录..."
+            rm -rf "$CLAUDE_PLUGINS_DIR"
+        else
+            log_info "跳过复制步骤"
+            return
+        fi
+    fi
+
+    # 创建目标目录
+    mkdir -p "$CLAUDE_PLUGINS_DIR"
+
+    # 复制文件，排除 .claude 和 .git 目录
+    log_info "复制文件（排除 .claude 和 .git）..."
+    rsync -av --exclude='.claude' --exclude='.git' "$PLUGIN_DIR/" "$CLAUDE_PLUGINS_DIR/" 2>/dev/null || {
+        # 如果没有 rsync，使用 cp -r 配合 find 排除
+        find "$PLUGIN_DIR" -type f \
+            ! -path '*/\.claude/*' \
+            ! -path '*/\.git/*' \
+            ! -path '*/\.*' \
+            -exec bash -c 'mkdir -p "'"$CLAUDE_PLUGINS_DIR"'/$(dirname "$1")" && cp -v "$1" "'"$CLAUDE_PLUGINS_DIR"'/$1"' _ {} \; 2>/dev/null || {
+            # 最后的备选方案：直接复制（不过滤）
+            log_warn "无法排除目录，直接复制所有文件..."
+            cp -r "$PLUGIN_DIR"/* "$CLAUDE_PLUGINS_DIR/" 2>/dev/null || true
+        }
+    }
+
+    log_info "插件文件复制完成"
+    echo ""
+
+    # 清理插件缓存
+    log_info "===================================="
+    log_info "Step 1.5: 清理插件缓存"
+    log_info "===================================="
+    echo ""
+
+    CLAUDE_CACHE_DIR="$HOME/.claude/plugins/cache/rf-testing-plugin"
+
+    if [ -d "$CLAUDE_CACHE_DIR" ]; then
+        log_info "发现插件缓存目录: $CLAUDE_CACHE_DIR"
+        log_info "清理缓存..."
+        rm -rf "$CLAUDE_CACHE_DIR"
+        if [ -d "$CLAUDE_CACHE_DIR" ]; then
+            log_warn "缓存清理失败，请重启 Claude 以刷新"
+        else
+            log_info "插件缓存清理成功"
+        fi
+    else
+        log_info "未找到插件缓存，跳过清理"
+    fi
+
+    echo ""
 }
 
 # 执行主流程

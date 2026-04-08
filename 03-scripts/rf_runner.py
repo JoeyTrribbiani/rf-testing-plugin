@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Robot Framework 执行脚本入口
-支持命令行参数,构建并执行 robot 命令
+支持命令行参数，构建并执行 robot 命令
+参考 Cursor 的执行方式，使用临时环境脚本
 """
 import argparse
 import subprocess
@@ -15,6 +16,7 @@ SCRIPT_DIR = Path(__file__).parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from python_detector import detect_python_environments
+from rf_env_builder import RFEnvBuilder
 
 
 def build_robot_command(
@@ -28,7 +30,8 @@ def build_robot_command(
     variable_file: Optional[str] = None,
     output_dir: str = "./output",
     log_level: str = "INFO",
-    listener: Optional[str] = None
+    listener: Optional[str] = None,
+    dryrun: bool = False
 ) -> List[str]:
     """
     构建 robot 命令
@@ -45,6 +48,7 @@ def build_robot_command(
         output_dir: 输出目录
         log_level: 日志级别
         listener: listener 脚本路径
+        dryrun: 是否执行 dryrun
 
     Returns:
         robot 命令列表
@@ -58,8 +62,15 @@ def build_robot_command(
     # 添加日志级别
     cmd.extend(["--loglevel", log_level])
 
-    # 添加输出目录
+    # 添加 dryrun 选项
+    if dryrun:
+        cmd.append("--dryrun")
+
+    # 添加输出目录和输出文件名（确保生成正确的文件）
     cmd.extend(["--outputdir", output_dir])
+    cmd.extend(["--output", "output.xml"])
+    cmd.extend(["--log", "log.html"])
+    cmd.extend(["--report", "report.html"])
 
     # 添加测试用例过滤
     if test_name:
@@ -88,12 +99,16 @@ def build_robot_command(
     return cmd
 
 
-def run_robot_command(cmd: List[str]) -> Dict[str, Any]:
+def run_robot_command_with_env(
+    cmd: List[str],
+    env_script: Optional[str] = None
+) -> Dict[str, Any]:
     """
-    执行 robot 命令
+    使用环境脚本执行 robot 命令（参考 Cursor 方式）
 
     Args:
         cmd: robot 命令列表
+        env_script: 环境脚本路径
 
     Returns:
         执行结果字典
@@ -103,17 +118,49 @@ def run_robot_command(cmd: List[str]) -> Dict[str, Any]:
         "exit_code": 1,
         "stdout": "",
         "stderr": "",
-        "error": None
+        "error": None,
+        "env_script": env_script
     }
 
     try:
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        stdout, stderr = process.communicate()
+        if env_script and os.path.exists(env_script):
+            # Windows: 使用 cmd /c 调用批处理
+            if os.name == "nt":
+                # 构建 Cursor 风格的命令
+                # cmd /c "cd work_dir && call env_script && python -m robot ..."
+                work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
+                full_cmd = [
+                    "cmd", "/c",
+                    f'cd /d "{work_dir}" && call "{env_script}" && {" ".join(cmd)}'
+                ]
+                process = subprocess.Popen(
+                    full_cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    shell=True
+                )
+                stdout, stderr = process.communicate()
+            else:
+                # Unix: 使用 source 脚本
+                work_dir = os.path.dirname(cmd[-1])
+                full_cmd = f'cd "{work_dir}" && source "{env_script}" && {" ".join(cmd)}'
+                process = subprocess.Popen(
+                    ["sh", "-c", full_cmd],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                stdout, stderr = process.communicate()
+        else:
+            # 直接执行（传统方式）
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            stdout, stderr = process.communicate()
 
         result["exit_code"] = process.returncode
         result["stdout"] = stdout
@@ -128,6 +175,19 @@ def run_robot_command(cmd: List[str]) -> Dict[str, Any]:
         result["error"] = str(e)
 
     return result
+
+
+def run_robot_command(cmd: List[str]) -> Dict[str, Any]:
+    """
+    执行 robot 命令（直接方式）
+
+    Args:
+        cmd: robot 命令列表
+
+    Returns:
+        执行结果字典
+    """
+    return run_robot_command_with_env(cmd, env_script=None)
 
 
 def detect_python_for_execution(python_path: Optional[str] = None) -> Optional[str]:
@@ -160,15 +220,13 @@ def detect_python_for_execution(python_path: Optional[str] = None) -> Optional[s
     except ImportError:
         pass
 
-    # 3. 自动检测，优先选择 3.7.x 版本
+    # 3. 自动检测，优先选择 Python 3.7.x 版本
     envs = detect_python_environments()
     if envs:
-        # 优先选择 Python 3.7.x 版本
         for env in envs:
             version = env.get("version", "")
             if version.startswith("3.7"):
                 return env["python_path"]
-        # 如果没有 3.7.x，返回第一个
         return envs[0]["python_path"]
 
     return None
@@ -177,7 +235,25 @@ def detect_python_for_execution(python_path: Optional[str] = None) -> Optional[s
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
-        description="Robot Framework Test Runner"
+        description="Robot Framework Test Runner",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  # 执行测试用例（使用环境脚本）
+  python rf_runner.py test.robot
+
+  # dryrun 模式验证语法
+  python rf_runner.py --dryrun test.robot
+
+  # 执行指定测试用例
+  python rf_runner.py --test "测试用例名称" test.robot
+
+  # 使用自定义 Python
+  python rf_runner.py --python /path/to/python test.robot
+
+  # 包含标签
+  python rf_runner.py --include P0 --include smoke test.robot
+        """
     )
     parser.add_argument(
         "robot_file",
@@ -217,18 +293,28 @@ def parse_args():
     parser.add_argument(
         "--outputdir",
         default="./output",
-        help="Output directory"
+        help="Output directory (default: ./output)"
     )
     parser.add_argument(
         "--loglevel",
         default="INFO",
         choices=["TRACE", "DEBUG", "INFO", "WARN", "NONE"],
-        help="Log level"
+        help="Log level (default: INFO)"
     )
     parser.add_argument(
         "--listener",
         default=None,
-        help="Listener script path"
+        help="Listener script path (default: use built-in listener)"
+    )
+    parser.add_argument(
+        "--dryrun",
+        action="store_true",
+        help="Dry run mode: validate syntax without executing"
+    )
+    parser.add_argument(
+        "--no-env-script",
+        action="store_true",
+        help="Don't use environment script (direct execution)"
     )
 
     return parser.parse_args()
@@ -249,6 +335,22 @@ def main():
         print("Error: No valid Python environment found", file=sys.stderr)
         sys.exit(1)
 
+    print(f"Using Python: {python_path}")
+
+    # 获取工作目录（.robot 文件所在目录）
+    work_dir = os.path.dirname(os.path.abspath(args.robot_file))
+
+    # 创建环境脚本
+    env_script = None
+    if not args.no_env_script:
+        try:
+            builder = RFEnvBuilder(python_path)
+            env_script = builder.create_env_script(work_dir)
+            print(f"Created environment script: {env_script}")
+        except Exception as e:
+            print(f"Warning: Failed to create env script: {e}", file=sys.stderr)
+            print("Using direct execution mode...", file=sys.stderr)
+
     # 默认使用内置 listener
     listener_path = args.listener or str(SCRIPT_DIR / "rf_listener.py")
 
@@ -264,18 +366,33 @@ def main():
         variable_file=args.variablefile,
         output_dir=args.outputdir,
         log_level=args.loglevel,
-        listener=listener_path
+        listener=listener_path,
+        dryrun=args.dryrun
     )
 
+    # 打印执行命令
+    print("Executing robot command:")
+    print(" ".join(cmd))
+    print()
+
     # 执行命令
-    result = run_robot_command(cmd)
+    result = run_robot_command_with_env(cmd, env_script)
+
+    # 输出结果
+    if result["stdout"]:
+        print(result["stdout"])
+
+    if result["stderr"]:
+        print(result["stderr"], file=sys.stderr)
 
     if result["error"]:
         print(f"Error: {result['error']}", file=sys.stderr)
         sys.exit(1)
 
-    if result["stderr"]:
-        print(result["stderr"], file=sys.stderr)
+    if result["success"]:
+        print("\nAll tests passed!")
+    else:
+        print(f"\nTests failed with exit code: {result['exit_code']}", file=sys.stderr)
 
     sys.exit(result["exit_code"])
 

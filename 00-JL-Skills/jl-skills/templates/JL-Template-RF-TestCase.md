@@ -20,51 +20,35 @@ ${MERCHANT_NO}    TEST001
 
 *** Test Cases ***
 用例名称示例
-    [Documentation]    【预置条件】已存在状态为正常的商户 【操作步骤】调用商户查询接口，获取商户基本信息 【预期结果】成功返回商户详情，状态为正常
+    [Documentation]    【预置条件】已存在状态为正常的商户【操作步骤】调用商户查询接口，获取商户基本信息【预期结果】成功返回商户详情，状态为正常
     [Tags]    P0    approved    REQ-001
-
-    # 步骤1：调用查询接口
     ${resp}    商户查询接口    ${MERCHANT_NO}
-
-    # 步骤2：校验响应
     Resp Dict Compare    ${resp}
-
-    # 步骤3：提取数据
     ${merchant_id}    Resp Dict Value    $.data.merchant_id
-
-    # 步骤4：断言
     Should Not Be Empty    ${merchant_id}
     Log    商户ID: ${merchant_id}
 
 
 异常场景示例 - 参数缺失
-    [Documentation]    【预置条件】无 【操作步骤】调用商户查询接口，不传入商户号参数 【预期结果】返回参数校验错误，ret_code 不为 0
+    [Documentation]    【预置条件】无【操作步骤】调用商户查询接口，不传入商户号参数【预期结果】返回参数校验错误，ret_code 不为 0
     [Tags]    P1    approved
-
     ${resp}    商户查询接口    ${EMPTY}
-
-    # 预期返回错误
     Should Be Equal    ${resp}[ret_code]    40001
     Should Contain    ${resp}[ret_msg]    商户号不能为空
 
 
 边界值示例 - 最大长度
-    [Documentation]    【预置条件】无 【操作步骤】创建商户，商户号为最大长度字符串 【预期结果】创建失败，返回长度校验错误
+    [Documentation]    【预置条件】无【操作步骤】创建商户，商户号为最大长度字符串【预期结果】创建失败，返回长度校验错误
     [Tags]    P2    approved    REQ-002
-
     ${max_merchant_no}    Set Variable If    ${MAX_LENGTH}    ${MAX_MERCHANT_NO}
-
     ${resp}    创建商户接口    ${max_merchant_no}
-
     Should Be Equal    ${resp}[ret_code]    40002
 
 
 批量测试示例 - 使用 FOR 循环
-    [Documentation]    【预置条件】存在多个不同状态的商户 【操作步骤】批量查询不同状态的商户 【预期结果】所有商户查询成功
+    [Documentation]    【预置条件】存在多个不同状态的商户【操作步骤】批量查询不同状态的商户【预期结果】所有商户查询成功
     [Tags]    P1    approved    REQ-003
-
     @{merchant_list}    Create List    TEST001    TEST002    TEST003
-
     FOR    ${merchant_no}    IN    @{merchant_list}
         Log    查询商户: ${merchant_no}
         ${resp}    商户查询接口    ${merchant_no}
@@ -75,16 +59,16 @@ ${MERCHANT_NO}    TEST001
 ## Documentation 三段式规范
 
 ```robotframework
-[Documentation]    【预置条件】<执行前的条件> 【操作步骤】<具体操作步骤> 【预期结果】<预期结果>
+[Documentation]    【预置条件】<执行前的条件>【操作步骤】<具体操作步骤>【预期结果】<预期结果>
 ```
 
 ### 示例
 
 | 场景 | Documentation |
 |------|---------------|
-| 正常流程 | 【预置条件】已存在状态为正常的商户 【操作步骤】调用商户查询接口，获取商户基本信息 【预期结果】成功返回商户详情，状态为正常 |
-| 异常流程 | 【预置条件】无 【操作步骤】调用商户查询接口，不传入商户号参数 【预期结果】返回参数校验错误 |
-| 边界测试 | 【预置条件】无 【操作步骤】创建商户，商户号为空字符串 【预期结果】创建失败，返回参数必填错误 |
+| 正常流程 | 【预置条件】已存在状态为正常的商户【操作步骤】调用商户查询接口，获取商户基本信息【预期结果】成功返回商户详情，状态为正常 |
+| 异常流程 | 【预置条件】无【操作步骤】调用商户查询接口，不传入商户号参数【预期结果】返回参数校验错误 |
+| 边界测试 | 【预置条件】无【操作步骤】创建商户，商户号为空字符串【预期结果】创建失败，返回参数必填错误 |
 
 ## Tags 标签规范
 
