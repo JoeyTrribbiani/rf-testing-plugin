@@ -21,12 +21,15 @@ DEFAULT_ROW = {
     "需求ID": "",
     "用例类型": "功能测试",
     "用例状态": "正常",
-    "用例等级": "中",
+    "用例等级": "P1",  # 默认值，会从 [Tags] 中覆盖
     "创建人": "徐俊康",
     "是否自动化": "是",
     "实现自动化": "是",
     "计划自动化": "是",
 }
+
+# 优先级排序：按优先级顺序选择第一个匹配的标签
+PRIORITY_ORDER = ["P0", "P1", "高", "中", "低"]
 
 SEP = " - "  # 用例目录段之间的分隔符
 
@@ -75,12 +78,13 @@ def parse_documentation_to_case(doc_text):
 
 
 def parse_robot_cases_from_documentation(robot_path):
-    """读取 .robot 文件，按用例名 + [Documentation] 解析为 TAPD 所需字段。"""
+    """读取 .robot 文件，按用例名 + [Documentation] + [Tags] 解析为 TAPD 所需字段。"""
     with open(robot_path, encoding="utf-8") as f:
         lines = f.readlines()
     cases = []
     current_case_name = None
     documentation = ""
+    tags = []
     for line in lines:
         line = line.rstrip("\n")
         stripped = line.strip()
@@ -89,32 +93,64 @@ def parse_robot_cases_from_documentation(robot_path):
             if current_case_name is not None and documentation:
                 parsed = parse_documentation_to_case(documentation)
                 if parsed:
+                    # 从 tags 中提取优先级（直接使用标签值，不做映射）
+                    priority = "P1"  # 默认值
+                    for tag in tags:
+                        # 优先匹配 P0/P1 格式
+                        if tag.upper() in ["P0", "P1"]:
+                            priority = tag.upper()
+                            break
+                        # 其次匹配中文格式
+                        elif tag in ["高", "中", "低"]:
+                            priority = tag
+                            break
                     cases.append({
                         "用例名称": current_case_name,
+                        "用例等级": priority,
                         **parsed
                     })
             current_case_name = stripped
             documentation = ""
+            tags = []
             continue
         if stripped.startswith("[Documentation]"):
             documentation = stripped.replace("[Documentation]", "").strip()
             continue
+        if stripped.startswith("[Tags]"):
+            tags_str = stripped.replace("[Tags]", "").strip()
+            tags = [t.strip() for t in tags_str.split() if t.strip()]
+            continue
+    # 处理最后一个用例
     if current_case_name and documentation:
         parsed = parse_documentation_to_case(documentation)
         if parsed:
-            cases.append({"用例名称": current_case_name, **parsed})
+            # 从 tags 中提取优先级（直接使用标签值，不做映射）
+            priority = "P1"  # 默认值
+            for tag in tags:
+                # 优先匹配 P0/P1 格式
+                if tag.upper() in ["P0", "P1"]:
+                    priority = tag.upper()
+                    break
+                # 其次匹配中文格式
+                elif tag in ["高", "中", "低"]:
+                    priority = tag
+                    break
+            cases.append({"用例名称": current_case_name, "用例等级": priority, **parsed})
     return cases
 
 
 def build_excel_and_base64(robot_path, excel_path, case_directory="", sheet_name="项目池测试用例导入模板", creator="徐俊康", default_row=None):
     default_row = default_row or {}
     row_defaults = {**DEFAULT_ROW, **default_row, "创建人": creator}
+    # 从默认值中移除用例等级，因为我们从用例标签中获取
+    row_defaults.pop("用例等级", None)
     cases = parse_robot_cases_from_documentation(robot_path)
     data = []
     for case in cases:
         row = {
             "用例目录": case_directory,
             "用例名称": case["用例名称"],
+            "用例等级": case.get("用例等级", "中"),  # 从解析的用例中获取，默认为中
             "前置条件": case["前置条件"],
             "用例步骤": case["用例步骤"],
             "预期结果": case["预期结果"],
