@@ -5,9 +5,19 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [2.6.2] - 2026-04-08
+## [2.6.3] - 2026-04-08
+
+### 新增（Added）
+
+- 添加 RF 测试用例执行命令 `/rf-testing:execute`
+  - 支持完整执行、dryrun 验证
+  - 支持指定用例、标签过滤等参数
+  - 自动检测 Python 环境并创建临时环境脚本
+  - 工作流中 script_execute 节点明确使用 `/rf-testing:execute` 命令
 
 ### 修复（Fixed）
+
+- 优化 GitLab 代码分析模式的工作流设计
 
 - 优化 GitLab 代码分析模式的工作流设计
   - 问题: YAPI 接口文档获取位置不合理，导致请求的接口详情不正确
