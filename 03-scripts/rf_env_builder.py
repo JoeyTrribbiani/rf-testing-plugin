@@ -103,16 +103,18 @@ REM 切换到工作目录
 cd /d "{work_dir}"
 
 REM 设置 Python 路径
-set PATH={Path(self.python_path).parent};%PATH%
+set PATH="{Path(self.python_path).parent}";%PATH%
 
 REM 设置 Python 路径（确保 python.exe 可用）
-set PYTHON={self.python_path}
+set PYTHON="{self.python_path}"
 
 REM 设置 site-packages 路径（用于导入 JLTestLibrary）
-if exist "{site_packages}" set PYTHONPATH={site_packages};%PYTHONPATH%
-
-REM 额外的环境变量
 """
+
+        if site_packages:
+            batch_content += f'set PYTHONPATH="{site_packages}";%PYTHONPATH%\n'
+
+        batch_content += "\nREM 额外的环境变量\n"
 
         if extra_vars:
             for key, value in extra_vars.items():

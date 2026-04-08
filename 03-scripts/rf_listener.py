@@ -6,6 +6,9 @@ Robot Framework 事件监听器
 import sys
 from typing import Any, Dict
 
+# Robot Framework Listener API 版本
+ROBOT_LISTENER_API_VERSION = 3
+
 
 class RFListener:
     """Robot Framework 事件监听器"""

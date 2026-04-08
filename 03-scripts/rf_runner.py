@@ -131,45 +131,28 @@ def run_robot_command_with_env(
     }
 
     try:
-        if env_script and os.path.exists(env_script):
-            # Windows: 使用 cmd /c 调用批处理
-            if os.name == "nt":
-                work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
-                # 将 cmd 列表转换为正确的字符串，避免编码问题
-                # list2cmdline 在 Python 3.7 不支持 encoding 参数，可能返回 str 或 bytes
-                try:
-                    cmd_bytes = subprocess.list2cmdline(cmd)
-                    if isinstance(cmd_bytes, bytes):
-                        cmd_str = cmd_bytes.decode('mbcs')
-                    else:
-                        cmd_str = cmd_bytes  # 已经是字符串
-                except (LookupError, UnicodeDecodeError):
-                    # 回退到空格连接
-                    cmd_str = " ".join(cmd)
-                # 构建 Cursor 风格的命令
-                full_cmd = [
-                    "cmd", "/c",
-                    f'cd /d "{work_dir}" && call "{env_script}" && {cmd_str}'
-                ]
-                process = subprocess.Popen(
-                    full_cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True,
-                    shell=True
-                )
-                stdout, stderr = process.communicate()
-            else:
-                # Unix: 使用 source 脚本
-                work_dir = os.path.dirname(cmd[-1])
-                full_cmd = f'cd "{work_dir}" && source "{env_script}" && {" ".join(cmd)}'
-                process = subprocess.Popen(
-                    ["sh", "-c", full_cmd],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                stdout, stderr = process.communicate()
+        # Windows 上优先使用直接执行方式（避免环境脚本的编码和路径问题）
+        if os.name == "nt":
+            work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=work_dir
+            )
+            stdout, stderr = process.communicate()
+        elif env_script and os.path.exists(env_script):
+            # Unix: 使用 source 脚本
+            work_dir = os.path.dirname(cmd[-1])
+            full_cmd = f'cd "{work_dir}" && source "{env_script}" && {" ".join(cmd)}'
+            process = subprocess.Popen(
+                ["sh", "-c", full_cmd],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            stdout, stderr = process.communicate()
         else:
             # 直接执行（传统方式）
             process = subprocess.Popen(
