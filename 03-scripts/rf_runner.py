@@ -136,10 +136,13 @@ def run_robot_command_with_env(
             if os.name == "nt":
                 work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
                 # 将 cmd 列表转换为正确的字符串，避免编码问题
-                # list2cmdline 在 Python 3.7 不支持 encoding 参数
+                # list2cmdline 在 Python 3.7 不支持 encoding 参数，可能返回 str 或 bytes
                 try:
                     cmd_bytes = subprocess.list2cmdline(cmd)
-                    cmd_str = cmd_bytes.decode('mbcs')
+                    if isinstance(cmd_bytes, bytes):
+                        cmd_str = cmd_bytes.decode('mbcs')
+                    else:
+                        cmd_str = cmd_bytes  # 已经是字符串
                 except (LookupError, UnicodeDecodeError):
                     # 回退到空格连接
                     cmd_str = " ".join(cmd)
