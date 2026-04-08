@@ -521,10 +521,20 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "gitl
 
 #### script_execute(执行 RF 测试用例)
 
-- **执行方法**: 使用 `Bash` 工具执行 `03-scripts/rf_runner.py`
+- **执行方法**: 使用 `Skill` 工具调用 `rf-testing:execute` 命令
+- **命令格式**: `/rf-testing:execute <robot-file> [选项]`
 - **职责**: 执行生成的 RF 测试用例，返回执行结果
-- **重要**: AI 自己执行，不是让用户执行
-- **环境切换**: 脚本会自动检测并激活正确的 Python 环境（如 conda activate python37）
+
+**AI 执行步骤**:
+1. **✅ 阶段开始**: 输出 "🚀 开始执行 RF 测试用例..."
+2. 使用 Skill 工具调用 `/rf-testing:execute <robot-file> --dryrun` 或 `/rf-testing:execute <robot-file>`
+3. 等待执行结果
+4. **✅ 阶段完成**: 输出 "🚀 RF 测试用例执行完成"
+
+**重要**:
+- AI 必须使用 Skill 工具调用 `/rf-testing:execute` 命令
+- 不要直接使用 Bash 工具执行 `conda activate` 和 `robot` 命令
+- `rf-testing:execute` 命令内部会自动处理 Python 环境检测和切换
 
 **自动化执行，无需人工选择 Python 环境**
 

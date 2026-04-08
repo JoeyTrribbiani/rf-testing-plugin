@@ -11,6 +11,12 @@
 
 - 优化 GitLab 代码分析模式的工作流设计
 
+- 修正 script_execute 节点执行方式
+  - 问题: AI 没有正确理解如何执行 RF 测试，直接使用 Bash + conda activate
+  - 原因: 工作流中没有明确使用 Skill 工具调用命令
+  - 修复: 明确 AI 应该使用 Skill 工具调用 `/rf-testing:execute` 命令
+  - 不要直接使用 Bash 工具执行 robot 命令
+
 - 优化 GitLab 代码分析模式的工作流设计
   - 问题: YAPI 接口文档获取位置不合理，导致请求的接口详情不正确
   - 原因: YAPI 获取在测试设计之后，无法基于改动点精准获取接口信息
