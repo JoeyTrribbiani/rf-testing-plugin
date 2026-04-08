@@ -8,13 +8,15 @@ argument-hint: <robot-file> [--dryrun] [--test <name>] [--include <tags>] [--exc
 **AI 必须使用 Bash 工具执行 `rf_runner.py` 脚本，不要直接执行 robot 命令！**
 
 ```bash
-# 基础格式
-python <插件路径>/03-scripts/rf_runner.py <robot-file> [选项]
+# 基础格式（使用插件根目录变量）
+python ${CLAUDE_PLUGIN_ROOT}/03-scripts/rf_runner.py <robot-file> [选项]
 
 # 示例
-python 03-scripts/rf_runner.py test.robot --dryrun
-python 03-scripts/rf_runner.py test.robot --include P0
+python ${CLAUDE_PLUGIN_ROOT}/03-scripts/rf_runner.py test.robot --dryrun
+python ${CLAUDE_PLUGIN_ROOT}/03-scripts/rf_runner.py test.robot --include P0
 ```
+
+**重要**: `${CLAUDE_PLUGIN_ROOT}` 是插件根目录的绝对路径，AI 会在运行时自动解析。
 
 ## 参数说明
 
@@ -37,11 +39,12 @@ python 03-scripts/rf_runner.py test.robot --include P0
 
 **AI 执行步骤**:
 1. 解析用户输入，获取 robot 文件路径和选项
-2. 构建执行命令: `python 03-scripts/rf_runner.py <robot-file> [选项]`
+2. 构建执行命令: `python ${CLAUDE_PLUGIN_ROOT}/03-scripts/rf_runner.py <robot-file> [选项]`
 3. 使用 Bash 工具执行命令
 4. 解析输出结果
 
 **重要**:
+- ✅ 使用 `${CLAUDE_PLUGIN_ROOT}` 变量引用插件根目录
 - ✅ 使用 Bash 工具执行 `rf_runner.py`
 - ❌ 不要直接执行 `conda activate && robot` 命令
 - ❌ 不要执行 `python -m robot` 命令

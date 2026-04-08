@@ -497,27 +497,26 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "gitl
 
 #### script_validate(执行验证 dryrun)
 
-- **脚本**: `03-scripts/rf_runner.py`
+- **执行方法**: 使用 `Skill` 工具调用 `/rf-testing:execute <robot-file> --dryrun` 命令
 - **职责**: 使用 dryrun 模式验证 RF 用例语法正确性
-- **执行命令**:
-  ```bash
-  python 03-scripts/rf_runner.py --dryrun --output-dir ./output <test_dir>
-  ```
-- **验证内容**:
-  - 语法正确性
-  - Resource 引用正确性
-  - 关键字是否存在
-  - 变量是否定义
-- **执行步骤**:
-  1. **✅ 阶段开始**: 输出 "🔎 开始执行验证（dryrun）..."
-  2. 检查 .robot 文件是否存在
-  3. 执行 dryrun 命令
-  4. 检查执行结果
-  5. **✅ 阶段完成**: 输出 "🔎 执行验证（dryrun）完成"
-- **输出**: dryrun 结果（通过/失败）
-- **错误处理**:
-  - 如果失败，输出详细的错误信息
-  - 提供修复建议
+
+**AI 执行步骤**:
+1. **✅ 阶段开始**: 输出 "🔎 开始执行验证（dryrun）..."
+2. 检查 .robot 文件是否存在
+3. 使用 Skill 工具调用 `/rf-testing:execute <robot-file> --dryrun` 命令
+4. 检查执行结果
+5. **✅ 阶段完成**: 输出 "🔎 执行验证（dryrun）完成"
+
+**验证内容**:
+- 语法正确性
+- Resource 引用正确性
+- 关键字是否存在
+- 变量是否定义
+
+**输出**: dryrun 结果（通过/失败）
+**错误处理**:
+- 如果失败，输出详细的错误信息
+- 提供修复建议
 
 #### script_execute(执行 RF 测试用例)
 
