@@ -326,11 +326,41 @@ git clone https://oauth2:%GITLAB_TOKEN%@gitlab.jlpay.com/%PROJECT_PATH%.git
 ```
 
 **重要**:
-- 必须使用 `oauth2:` 前缀配合 token
+- **必须使用 `oauth2:` 前缀配合 token**（认证失败的主要原因是缺少这个前缀）
 - 使用环境变量获取 token，不要硬编码
 - 先清理旧代码再 clone
 - 下载到临时目录 `$TMPDIR/rf-testing/` 或 `%TEMP%\rf-testing\`
 - **不使用** `--depth 1` 浅克隆，以便获取完整历史用于对比分析
+
+**⚠️ 常见错误 - 认证失败原因分析**:
+
+如果看到以下错误：
+```
+warning: missing OAuth configuration for gitlab.jlpay.com
+remote: HTTP Basic: Access denied
+fatal: Authentication failed
+```
+
+**原因分析**：
+1. ❌ URL 中缺少 `oauth2:` 前缀
+2. ❌ 使用了错误的认证方式（Basic Auth 而非 OAuth2）
+3. ❌ Token 格式不正确
+
+**正确格式对比**：
+```bash
+# ❌ 错误格式（会导致认证失败）
+git clone https://gitlab.jlpay.com/group/project.git
+git clone https://${GITLAB_TOKEN}@gitlab.jlpay.com/group/project.git
+
+# ✅ 正确格式（使用 oauth2: 前缀）
+git clone "https://oauth2:${GITLAB_PERSONAL_ACCESS_TOKEN}@gitlab.jlpay.com/group/project.git"
+```
+
+**Claude 必须遵守的执行规则**：
+1. 检查用户是否提供了 `GITLAB_PERSONAL_ACCESS_TOKEN` 环境变量
+2. **必须**使用 `oauth2:` 前缀构建 git clone URL
+3. **必须**使用双引号包裹 URL（避免 shell 特殊字符问题）
+4. 如果遇到认证失败，立即停止并提示用户检查 token 是否有效
 
 <!-- MCP_NODE_METADATA: {"mode":"aiToolSelection","serverId":"gitlab","userIntent":"从 GitLab 或 GitHub 获取指定仓库的代码。\n用户可选择指定分支（如 develop、master）或指定 commit。\n获取代码后用于分析改动点。"} -->
 
@@ -349,7 +379,8 @@ git clone https://oauth2:%GITLAB_TOKEN%@gitlab.jlpay.com/%PROJECT_PATH%.git
 **参数**:
 - `project_path`: GitLab 项目路径（如 `group/project`）
 - `branch_or_commit`: 分支名或 commit SHA
-- `output_dir`: 代码输出目录（临时）
+- `code_temp_dir`: 代码临时输出目录（使用系统临时目录）
+- `rf_output_dir`: RF 用例输出目录（固定为当前工作目录下的 ./output/）
 
 **执行方法**:
 
@@ -462,18 +493,29 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "gitl
   1. **✅ 阶段开始**: 输出 "📚 开始参考用例分析..."
   2. 询问用户：是否有现有用例目录？
   3. 如果有，提供目录路径
-  4. 询问用户：希望完全复用现有风格，还是仅作参考？
-  5. 分析参考用例：
-     - 扫描 .robot 文件
+  4. **⚠️ 安全检查**: 验证参考目录是否与输出目录相同
+     - 如果相同，警告："参考目录与输出目录相同，可能会导致现有文件被覆盖！"
+     - 建议用户修改输出目录或选择不同的参考目录
+     - 如果用户确认继续，明确告知风险
+  5. 询问用户：希望完全复用现有风格，还是仅作参考？
+  6. 分析参考用例（**只读操作，不修改任何文件**）：
+     - 扫描 .robot 文件（使用 Read 工具）
      - 提取已有关键字
      - 提取已有变量
      - 学习命名风格和结构规范
-  6. **✅ 阶段完成**: 输出 "📚 参考用例分析完成"
+  7. **✅ 阶段完成**: 输出 "📚 参考用例分析完成"
 - **输出**:
   - 可复用关键字清单
   - 可复用变量清单
   - 风格学习报告
   - 复用建议报告
+- **⚠️ 重要安全规则**:
+  1. **绝对禁止**修改参考目录中的任何文件
+  2. **绝对禁止**覆盖参考目录中的现有用例
+  3. **绝对禁止**删除参考目录中的任何内容
+  4. 参考用例仅用于学习风格和提取可复用内容
+  5. 生成的用例必须写入 `./output/` 目录，不能写入参考目录
+  6. 如果检测到参考目录与输出目录冲突，必须立即警告用户
 
 #### skill_points(识别测试点)
 
@@ -509,12 +551,20 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "gitl
 - **执行时机**: 必须在测试点识别和参考用例分析完成后执行
 - **执行步骤**:
   1. **✅ 阶段开始**: 输出 "📝 开始生成 RF 测试用例..."
-  2. 使用 `Skill` 工具调用 `rf-test` skill
-  3. 根据测试点生成标准4文件结构
-  4. 应用命名规范（下划线分隔）
-  5. 复用参考用例中的关键字和变量
-  6. **✅ 阶段完成**: 输出 "📝 RF 测试用例生成完成"
-- **输出**: RF 用例文件（4个标准文件）
+  2. **⚠️ 输出目录确认**: 确认输出目录为 `./output/`（必须与参考目录分离）
+  3. 使用 `Skill` 工具调用 `rf-test` skill
+  4. 根据测试点生成标准4文件结构
+  5. 应用命名规范（下划线分隔）
+  6. 复用参考用例中的关键字和变量（不覆盖原文件）
+  7. **✅ 阶段完成**: 输出 "📝 RF 测试用例生成完成"
+- **输出**: RF 用例文件（4个标准文件，必须输出到 `./output/` 目录）
+- **⚠️ 重要安全规则**:
+  1. **输出目录必须是 `./output/`**，绝对不能是参考目录
+  2. **绝对禁止**在参考目录中创建或修改任何文件
+  3. **绝对禁止**覆盖参考目录中的任何内容
+  4. **绝对禁止**删除参考目录中的任何文件
+  5. 如果用户提供了参考目录，生成的用例必须输出到独立的 `./output/` 目录
+  6. 如果检测到输出目录与参考目录冲突，必须立即停止并警告用户
 
 #### skill_rf_qa(RF 质量保证与自动修复)
 
@@ -674,8 +724,9 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "gitl
   - `use_env_script`: 是否使用环境脚本（默认: True）
   - `test_name`: 执行指定测试用例（可选）
   - `suite_name`: 执行指定测试套件（可选）
-  - `output_dir`: 输出目录（默认: ./output）
+  - `output_dir`: RF 输出目录（固定为当前工作目录的 ./output/）
   - `dryrun`: 是否执行 dryrun 模式（默认: False）
+  - `clean`: 是否清理输出目录（清理临时文件，保留 output.xml/log.html/report.html）
   - `env_vars`: 额外的环境变量（可选）
 - **返回值**:
   - `success`: 执行是否成功

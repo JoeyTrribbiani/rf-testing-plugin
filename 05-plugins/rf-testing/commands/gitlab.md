@@ -24,11 +24,33 @@ argument-hint: [project-path]
 /rf-testing:gitlab pay-plus/merch/access/merch-access-standard develop
 ```
 
+**⚠️ 重要：OAuth2 认证格式**
+
+GitLab git clone 必须使用 OAuth2 格式，否则会报 "Authentication failed" 错误。
+
+**错误格式**（会导致认证失败）：
+```bash
+git clone https://gitlab.jlpay.com/group/project.git
+git clone https://${GITLAB_TOKEN}@gitlab.jlpay.com/group/project.git
+```
+
+**正确格式**（使用 oauth2: 前缀）：
+```bash
+git clone https://oauth2:${GITLAB_PERSONAL_ACCESS_TOKEN}@gitlab.jlpay.com/group/project.git
+```
+
+**错误示例**（不要使用）：
+```
+warning: missing OAuth configuration for gitlab.jlpay.com
+remote: HTTP Basic: Access denied. The provided password or token is incorrect
+fatal: Authentication failed
+```
+
 **执行要求**：
 
 1. **使用 git clone 获取代码**
-   - 使用环境变量 `GITLAB_PERSONAL_ACCESS_TOKEN`
-   - 使用 oauth2 认证方式
+   - 必须使用环境变量 `GITLAB_PERSONAL_ACCESS_TOKEN`
+   - **必须使用 oauth2 认证方式**（重要！）
    - 下载到临时目录 `$TMPDIR/rf-testing/`
 
 2. **Git clone 命令格式**:
@@ -47,7 +69,10 @@ argument-hint: [project-path]
      https://oauth2:%GITLAB_PERSONAL_ACCESS_TOKEN%@gitlab.jlpay.com/<project-path>.git
    ```
 
-   **注意**: 不使用 `--depth 1` 浅克隆，以便获取完整历史用于对比分析
+   **⚠️ 注意**：
+   - 必须包含 `oauth2:` 前缀
+   - 使用双引号包裹 URL（避免 shell 解析问题）
+   - 不使用 `--depth 1` 浅克隆，以便获取完整历史用于对比分析
 
 3. **如果指定了分支或 commit**:
    ```bash

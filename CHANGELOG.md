@@ -5,6 +5,55 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.7.1] - 2026-04-09
+
+### 修复（Fixed）
+
+- 修复 GitLab OAuth2 认证格式问题
+  - 问题: Claude 未严格按照工作流执行，导致 git clone 认证失败
+  - 错误信息: "HTTP Basic: Access denied", "fatal: Authentication failed"
+  - 原因: git clone URL 中缺少 `oauth2:` 前缀
+  - 修复:
+    - 在 `gitlab.md` 中添加详细的 OAuth2 认证格式说明
+    - 在 `full-test-pipeline.md` 中添加常见错误分析和正确格式对比
+    - 明确 Claude 必须使用 `oauth2:` 前缀构建 git clone URL
+  - 涉及文件:
+    - `05-plugins/rf-testing/commands/gitlab.md`
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- 修复输出目录参数不统一问题
+  - 问题: 工作流文档中输出目录参数命名不一致
+  - 原因: `output_dir` 既用于临时代码目录，又用于 RF 输出目录
+  - 修复:
+    - 统一使用 `./output/` 作为 RF 输出目录
+    - 临时代码目录使用系统临时目录（`$TMPDIR/rf-testing/`）
+    - 更新参数说明，明确区分两种目录用途
+  - 涉及文件:
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- 添加 `--clean` 参数说明到工作流文档
+  - 说明: 清理输出目录中的临时文件，保留核心结果文件
+  - 涉及文件:
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- **严重修复**: 防止参考用例目录被覆盖
+  - 问题: 用户提供的参考 RF 用例目录可能被生成的用例覆盖
+  - 原因: 工作流没有明确禁止在参考目录中创建/修改文件
+  - 影响: 可能导致现有用例、关键字和参数被意外覆盖
+  - 修复:
+    - 在 `skill_reference` 节点添加安全检查，验证参考目录是否与输出目录相同
+    - 在 `skill_generation` 节点添加输出目录确认和安全规则
+    - 明确禁止在参考目录中创建/修改/删除任何文件
+    - 要求生成的用例必须输出到独立的 `./output/` 目录
+  - 涉及文件:
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+  - 安全规则:
+    1. **绝对禁止**修改参考目录中的任何文件
+    2. **绝对禁止**覆盖参考目录中的现有用例
+    3. **绝对禁止**删除参考目录中的任何内容
+    4. 生成的用例必须写入 `./output/` 目录
+    5. 检测到冲突必须立即警告用户
+
 ## [2.7.0] - 2026-04-09
 
 ### 新增（Added）
