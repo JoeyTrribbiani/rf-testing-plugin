@@ -5,6 +5,52 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.7.2] - 2026-04-09
+
+### 修复（Fixed）
+
+- **严重修复**: 增强 Windows Python 环境检测能力
+  - 问题: Windows 环境下某些用户的 Python 环境检测不到或检测不全
+  - 原因分析:
+    1. 版本检测方法单一，只使用 `--version` 参数
+    2. 编码处理不完善，中文路径/输出导致解码失败
+    3. 缺少 Windows Registry 查询，漏掉系统安装的 Python
+    4. 缺少 Python Launcher (py.exe) 支持
+    5. 版本解析对异常格式处理不足
+    6. 超时时间过短（5秒），慢速机器上可能超时
+  - 修复内容:
+    1. 增强版本检测方法：
+       - 优先使用 `sys.version`（更可靠）
+       - 备选使用 `--version` 参数
+       - 支持多种编码（utf-8, gbk, cp936, latin-1）
+       - 增加超时时间到 10 秒
+       - 使用正则表达式提取版本号
+    2. 新增 Windows Registry 查询：
+       - 查找 `HKLM\SOFTWARE\Python\PythonCore`（系统安装）
+       - 查找 `HKCU\SOFTWARE\Python\PythonCore`（用户安装）
+    3. 新增 Python Launcher 支持：
+       - 从 `py.exe -0` 获取配置的 Python 版本列表
+       - 支持 `py -3.x` 格式调用
+    4. 扩展路径搜索范围：
+       - 添加常见开发目录（D:\, E:\）
+       - 从 PATH 环境变量中提取 Python 路径
+       - 从 PYTHONPATH 环境变量中提取 Python 路径
+    5. 新增详细调试模式：
+       - 所有检测函数支持 `verbose` 参数
+       - 输出详细的检测过程和错误信息
+    6. 增强错误处理：
+       - 记录失败原因便于诊断
+       - 静默处理预期错误，避免干扰用户
+  - 涉及文件:
+    - `03-scripts/python_detector.py`
+  - 改进功能:
+    - ✅ 支持从 Windows Registry 查找已安装的 Python
+    - ✅ 支持 Python Launcher (py.exe) 配置
+    - ✅ 增强版本检测鲁棒性（多种编码、正则提取）
+    - ✅ 扩展路径搜索范围（更多常见安装位置）
+    - ✅ 提供详细调试输出（--verbose 参数）
+    - ✅ 更好的错误处理和诊断信息
+
 ## [2.7.1] - 2026-04-09
 
 ### 修复（Fixed）
