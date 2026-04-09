@@ -5,6 +5,54 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.7.0] - 2026-04-09
+
+### 新增（Added）
+
+- 实现 TAPD 需求与代码互补验证机制
+  - TAPD 模式下自动从需求提取 GitLab 关联信息
+  - 支持从需求描述或自定义字段解析 GitLab 项目路径和分支
+  - 新增需求代码验证节点，对比需求描述和代码实现
+  - 新增测试覆盖检查节点，确保测试场景覆盖所有需求点
+  - 完整流程：需求 → 代码获取 → 代码分析 → 互补验证 → 测试设计 → 用例生成
+
+### 修复（Fixed）
+
+- 修复所有 Skill 调用方式错误
+  - 问题: 使用错误的 skill 调用格式（如 plugin:rf-testing:rf-standards-check）
+  - 原因: Skill 工具需要使用 skill 名称，不是文件路径或插件前缀
+  - 修复: 统一使用正确的 skill 名称（analyze、rf-test、rf-standards-check、rf-tapd-conversion）
+  - 涉及文件:
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- 修复 GitLab 代码分析模式无法加载 skill 的问题
+  - 问题: 执行代码分析时报错 "Unknown skill: analyze:structure-analysis"
+  - 原因: 工作流中错误使用了不存在的子技能名称 `analyze:structure-analysis`
+  - 修复: 改为使用正确的 skill 名称 `analyze`，通过提示指令让 skill 执行完整分析
+  - 涉及文件:
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- 修复 GitLab 流程浅克隆无法对比分析的问题
+  - 问题: 使用 `--depth 1` 浅克隆后无法进行历史对比分析
+  - 原因: 浅克隆只获取最新提交，无法获取完整 git 历史用于对比
+  - 修复: 移除 `--depth 1` 参数，使用完整克隆
+  - 涉及文件:
+    - `05-plugins/rf-testing/commands/gitlab.md`
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- 修复 YAPI MCP 获取项目失败的问题
+  - 问题: YAPI MCP 服务器无法获取项目列表，即使环境变量已配置
+  - 原因: `.mcp.json` 配置中没有为 yapi-auto-mcp 传递环境变量
+  - 修复: 在 MCP 配置中添加 `YAPI_BASE_URL` 和 `YAPI_TOKEN` 环境变量
+  - 涉及文件:
+    - `05-plugins/rf-testing/.mcp.json`
+
+### 变更（Changed）
+
+- 重新设计工作流流程图，支持 TAPD 需求与代码互补验证
+- 更新 TAPD 模式执行流程，新增代码获取和互补验证阶段
+- 统一所有 Skill 调用方式，使用 skill 名称而非文件路径
+
 ## [2.6.4] - 2026-04-09
 
 ### 修复（Fixed）
