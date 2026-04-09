@@ -214,8 +214,8 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "tapd
    # 清理旧代码（避免冲突）
    rm -rf <项目名称>
 
-   # 使用 oauth2 认证方式 clone 代码（深度1，减少下载量）
-   git clone --depth 1 \
+   # 使用 oauth2 认证方式 clone 代码（不使用浅克隆，以便获取完整历史用于对比分析）
+   git clone \
      "https://oauth2:${GITLAB_TOKEN}@gitlab.jlpay.com/<项目路径>.git" \
      2>&1
    ```
@@ -242,7 +242,7 @@ project_name="merch-access-standard"
 # 执行 clone
 cd "$TMPDIR/rf-testing"
 rm -rf "$project_name"
-git clone --depth 1 \
+git clone \
   "https://oauth2:${GITLAB_PERSONAL_ACCESS_TOKEN}@gitlab.jlpay.com/${project_path}.git" \
   2>&1
 ```
@@ -259,7 +259,7 @@ set PROJECT_NAME=merch-access-standard
 REM 执行 clone
 cd %TEMP%\rf-testing
 rmdir /s /q %PROJECT_NAME%
-git clone --depth 1 https://oauth2:%GITLAB_TOKEN%@gitlab.jlpay.com/%PROJECT_PATH%.git
+git clone https://oauth2:%GITLAB_TOKEN%@gitlab.jlpay.com/%PROJECT_PATH%.git
 ```
 
 **重要**:
@@ -267,7 +267,7 @@ git clone --depth 1 https://oauth2:%GITLAB_TOKEN%@gitlab.jlpay.com/%PROJECT_PATH
 - 使用环境变量获取 token，不要硬编码
 - 先清理旧代码再 clone
 - 下载到临时目录 `$TMPDIR/rf-testing/` 或 `%TEMP%\rf-testing\`
-- 使用 `--depth 1` 减少下载量
+- **不使用** `--depth 1` 浅克隆，以便获取完整历史用于对比分析
 
 <!-- MCP_NODE_METADATA: {"mode":"aiToolSelection","serverId":"gitlab","userIntent":"从 GitLab 或 GitHub 获取指定仓库的代码。\n用户可选择指定分支（如 develop、master）或指定 commit。\n获取代码后用于分析改动点。"} -->
 
@@ -294,15 +294,13 @@ Claude Code 应分析上述任务描述，在运行时查询 MCP 服务器 "gitl
 
 #### code_analysis(代码分析)
 
-- **执行方法**: 使用 `Skill` 工具调用 analyze 指令
-- **职责**: 使用 analyze 指令进行完整代码分析（9步骤）
-- **重要**: 必须使用 `01-RF-Skills/jl-skills/instructions/` 目录下的 analyze 指令
+- **执行方法**: 使用 `Skill` 工具调用 analyze skill
+- **职责**: 使用 analyze skill 进行完整代码分析（9步骤）
+- **重要**: 必须使用 `00-JL-Skills/skills/analyze/SKILL.md` skill
 - **执行步骤**:
   1. **✅ 阶段开始**: 输出 "📊 开始代码分析阶段..."
-  2. 使用 `Skill` 工具调用 `analyze:structure-analysis` 指令
-  3. 使用 `Skill` 工具调用 `analyze:flow-analysis` 指令
-  4. 使用 `Skill` 工具调用 `analyze:impact-analysis` 指令
-  5. **✅ 阶段完成**: 输出 "📊 代码分析阶段完成，生成分析报告"
+  2. 使用 `Skill` 工具调用 `analyze` skill，提示："对 <代码路径> 进行完整代码分析（结构分析+流程分析+影响面分析）"
+  3. **✅ 阶段完成**: 输出 "📊 代码分析阶段完成，生成分析报告"
 - **输出**: 完整代码分析报告（结构分析、流程分析、影响面分析）
 - **重要**: 必须完成全部3个分析步骤后才能进入下一阶段
 

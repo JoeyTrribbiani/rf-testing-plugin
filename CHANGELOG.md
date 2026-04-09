@@ -5,6 +5,32 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [2.6.4] - 2026-04-09
+
+### 修复（Fixed）
+
+- 修复 GitLab 代码分析模式无法加载 skill 的问题
+  - 问题: 执行代码分析时报错 "Unknown skill: analyze:structure-analysis"
+  - 原因: 工作流中错误使用了不存在的子技能名称 `analyze:structure-analysis`
+  - 修复: 改为使用正确的 skill 名称 `analyze`，通过提示指令让 skill 执行完整分析
+  - 涉及文件:
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- 修复 GitLab 流程浅克隆无法对比分析的问题
+  - 问题: 使用 `--depth 1` 浅克隆后无法进行历史对比分析
+  - 原因: 浅克隆只获取最新提交，无法获取完整 git 历史用于对比
+  - 修复: 移除 `--depth 1` 参数，使用完整克隆
+  - 涉及文件:
+    - `05-plugins/rf-testing/commands/gitlab.md`
+    - `05-plugins/rf-testing/workflows/full-test-pipeline.md`
+
+- 修复 YAPI MCP 获取项目失败的问题
+  - 问题: YAPI MCP 服务器无法获取项目列表，即使环境变量已配置
+  - 原因: `.mcp.json` 配置中没有为 yapi-auto-mcp 传递环境变量
+  - 修复: 在 MCP 配置中添加 `YAPI_BASE_URL` 和 `YAPI_TOKEN` 环境变量
+  - 涉及文件:
+    - `05-plugins/rf-testing/.mcp.json`
+
 ## [2.6.3] - 2026-04-08
 
 ### 修复（Fixed）

@@ -36,16 +36,18 @@ argument-hint: [project-path]
    # Unix/Linux/macOS
    cd "$TMPDIR/rf-testing"
    rm -rf <project-name>
-   git clone --depth 1 \
+   git clone \
      "https://oauth2:${GITLAB_PERSONAL_ACCESS_TOKEN}@gitlab.jlpay.com/<project-path>.git" \
      2>&1
 
    # Windows
    cd %TEMP%\rf-testing
    rmdir /s /q <project-name>
-   git clone --depth 1 \
+   git clone \
      https://oauth2:%GITLAB_PERSONAL_ACCESS_TOKEN%@gitlab.jlpay.com/<project-path>.git
    ```
+
+   **注意**: 不使用 `--depth 1` 浅克隆，以便获取完整历史用于对比分析
 
 3. **如果指定了分支或 commit**:
    ```bash

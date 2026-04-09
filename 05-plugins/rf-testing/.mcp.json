@@ -10,7 +10,11 @@
     },
     "yapi-auto-mcp": {
       "command": "npx",
-      "args": ["-y", "yapi-auto-mcp", "--stdio"]
+      "args": ["-y", "yapi-auto-mcp", "--stdio"],
+      "env": {
+        "YAPI_BASE_URL": "${YAPI_BASE_URL}",
+        "YAPI_TOKEN": "${YAPI_TOKEN}"
+      }
     },
     "github": {
       "command": "npx",
