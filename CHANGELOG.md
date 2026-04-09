@@ -16,6 +16,21 @@
   - 新增测试覆盖检查节点，确保测试场景覆盖所有需求点
   - 完整流程：需求 → 代码获取 → 代码分析 → 互补验证 → 测试设计 → 用例生成
 
+- 新增插件路径发现工具 `find_plugin_root.py`
+  - 支持多种安装场景下的插件根目录查找
+  - 查找顺序：CLAUDE_PLUGIN_ROOT 环境变量 → __file__ 父目录 → cache 目录 → 当前工作目录
+  - 提供 `get_script_path()` 辅助函数获取脚本路径
+
+- 新增输出目录清理功能
+  - 新增 `--clean` 参数，清理输出目录中的临时文件
+  - 保留核心结果文件（output.xml, log.html, report.html）
+  - 支持中文路径和短路径转换（Windows）
+
+- 新增插件路径指引命令 `plugin-path.md`
+  - 文档化插件路径获取方式
+  - 提供环境变量和备用路径说明
+  - 包含执行示例和 AI 使用指南
+
 ### 修复（Fixed）
 
 - 修复所有 Skill 调用方式错误
@@ -46,6 +61,21 @@
   - 修复: 在 MCP 配置中添加 `YAPI_BASE_URL` 和 `YAPI_TOKEN` 环境变量
   - 涉及文件:
     - `05-plugins/rf-testing/.mcp.json`
+
+- 修复 Windows 中文路径编码问题
+  - 问题: Bash 命令执行时中文路径显示为乱码
+  - 原因: Windows 命令行不正确处理 Unicode 路径
+  - 修复: 使用 win32api 短路径转换，设置正确的编码环境变量
+  - 涉及文件:
+    - `03-scripts/rf_runner.py`
+
+- 修复输出目录 markdown 文件过多的问题
+  - 问题: 执行多次后输出目录堆积大量 md 文件，难以查看
+  - 原因: 没有清理临时文件的机制
+  - 修复: 新增 `--clean` 参数和 `clean_output_directory()` 函数
+  - 涉及文件:
+    - `03-scripts/rf_runner.py`
+    - `05-plugins/rf-testing/commands/execute.md`
 
 ### 变更（Changed）
 

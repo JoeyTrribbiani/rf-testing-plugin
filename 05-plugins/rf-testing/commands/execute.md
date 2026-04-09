@@ -33,10 +33,15 @@ python ${CLAUDE_PLUGIN_ROOT}/03-scripts/rf_runner.py test.robot --dryrun
 **推荐的 Bash 执行命令格式**：
 ```bash
 cd <robot-file-所在目录> && \
-python ${CLAUDE_PLUGIN_ROOT}/03-scripts/rf_runner.py <robot-file> [选项] 2>&1 || \
-python ${CLAUDE_PLUGIN_ROOT}/../../03-scripts/rf_runner.py <robot-file> [选项] 2>&1 || \
-python ${CLAUDE_PLUGIN_ROOT}/../../plugins/rf-testing-plugin/03-scripts/rf_runner.py <robot-file> [选项] 2>&1
+PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python ${CLAUDE_PLUGIN_ROOT}/03-scripts/rf_runner.py <robot-file> [选项] 2>&1 || \
+PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python ${CLAUDE_PLUGIN_ROOT}/../../03-scripts/rf_runner.py <robot-file> [选项] 2>&1 || \
+PYTHONIOENCODING=utf-8 PYTHONUTF8=1 python ${CLAUDE_PLUGIN_ROOT}/../../plugins/rf-testing-plugin/03-scripts/rf_runner.py <robot-file> [选项] 2>&1
 ```
+
+**重要路径指引**:
+- 使用 `/plugin-path` 命令获取插件路径指引
+- 优先使用 `${CLAUDE_PLUGIN_ROOT}` 环境变量
+- 如遇路径问题，使用备用路径
 
 **重要**:
 - `${CLAUDE_PLUGIN_ROOT}` 是插件根目录的绝对路径，AI 会在运行时自动解析
@@ -59,6 +64,7 @@ python ${CLAUDE_PLUGIN_ROOT}/../../plugins/rf-testing-plugin/03-scripts/rf_runne
 - `--output-dir <path>`: 输出目录（默认: ./output）
 - `--no-env-script`: 不使用环境脚本（直接执行）
 - `--python-path <path>`: 指定 Python 环境路径
+- `--clean`: 清理输出目录中的临时文件，保留核心结果文件（output.xml, log.html, report.html）
 
 ## 当前输入
 

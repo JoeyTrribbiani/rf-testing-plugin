@@ -39,7 +39,8 @@ def build_robot_command(
     output_dir: str = "./output",
     log_level: str = "INFO",
     listener: Optional[str] = None,
-    dryrun: bool = False
+    dryrun: bool = False,
+    clean_output: bool = False
 ) -> List[str]:
     """
     构建 robot 命令
@@ -57,6 +58,7 @@ def build_robot_command(
         log_level: 日志级别
         listener: listener 脚本路径
         dryrun: 是否执行 dryrun
+        clean_output: 是否清理输出目录
 
     Returns:
         robot 命令列表
@@ -134,12 +136,43 @@ def run_robot_command_with_env(
         # Windows 上优先使用直接执行方式（避免环境脚本的编码和路径问题）
         if os.name == "nt":
             work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
+
+            # 修复中文路径问题：使用短路径格式
+            try:
+                import win32api
+                work_dir = win32api.GetShortPathName(work_dir)
+            except (ImportError, Exception):
+                pass  # 短路径转换失败，使用原始路径
+
+            # 修复中文路径问题：确保路径使用正确的编码
+            # 将命令列表转换为短路径格式
+            try:
+                cmd_short = []
+                for item in cmd:
+                    # 转换为短路径
+                    try:
+                        if os.path.exists(item) and not item.startswith("-"):
+                            cmd_short.append(win32api.GetShortPathName(item))
+                        else:
+                            cmd_short.append(item)
+                    except (ImportError, Exception, FileNotFoundError):
+                        cmd_short.append(item)
+                cmd = cmd_short
+            except (ImportError, Exception):
+                pass  # 短路径转换失败，使用原始命令
+
+            # 设置正确的编码环境变量
+            env = os.environ.copy()
+            env['PYTHONIOENCODING'] = 'utf-8'
+            env['PYTHONUTF8'] = '1'
+
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                cwd=work_dir
+                cwd=work_dir,
+                env=env
             )
             stdout, stderr = process.communicate()
         elif env_script and os.path.exists(env_script):
@@ -317,8 +350,49 @@ def parse_args():
         action="store_true",
         help="Don't use environment script (direct execution)"
     )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Clean output directory before execution"
+    )
 
     return parser.parse_args()
+
+
+def clean_output_directory(output_dir: str) -> None:
+    """
+    清理输出目录中的临时文件，保留核心结果文件
+
+    Args:
+        output_dir: 输出目录路径
+    """
+    import shutil
+
+    if not os.path.exists(output_dir):
+        return
+
+    # 保留的文件
+    keep_files = {"output.xml", "log.html", "report.html"}
+
+    # 遍历目录，删除非保留文件
+    for root, dirs, files in os.walk(output_dir, topdown=False):
+        for file in files:
+            if file not in keep_files:
+                file_path = os.path.join(root, file)
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    pass  # 忽略删除错误
+
+    # 删除空目录
+    for root, dirs, files in os.walk(output_dir, topdown=False):
+        for dir_name in dirs:
+            dir_path = os.path.join(root, dir_name)
+            try:
+                if not os.listdir(dir_path):
+                    os.rmdir(dir_path)
+            except Exception:
+                pass
 
 
 def main():
@@ -329,6 +403,12 @@ def main():
     if not os.path.exists(args.robot_file):
         print(f"Error: Robot file not found: {args.robot_file}", file=sys.stderr)
         sys.exit(1)
+
+    # 清理输出目录（如果启用）
+    if args.clean:
+        output_dir = os.path.abspath(args.outputdir)
+        clean_output_directory(output_dir)
+        print(f"Cleaned output directory: {output_dir}")
 
     # 检测 Python 环境
     python_path = detect_python_for_execution(args.python)
@@ -368,7 +448,8 @@ def main():
         output_dir=args.outputdir,
         log_level=args.loglevel,
         listener=listener_path,
-        dryrun=args.dryrun
+        dryrun=args.dryrun,
+        clean_output=args.clean
     )
 
     # 打印执行命令
