@@ -206,9 +206,10 @@ echo.
 
 REM Save Python environment configuration
 echo [INFO] Saving Python environment configuration...
-python "%PLUGIN_DIR%\03-scripts\rf_config.py" --set-python "%PYTHON_CMD%" 2>nul
+python "%PLUGIN_DIR%\03-scripts\rf_config.py" --set-python "%PYTHON_CMD%"
 if errorlevel 1 (
     echo [WARN] Failed to save Python configuration
+    echo [INFO] Python path not saved, runtime will auto-detect
 ) else (
     echo [INFO] Python environment saved: %PYTHON_CMD%
 )

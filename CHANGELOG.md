@@ -43,11 +43,16 @@
        - 静默处理预期错误，避免干扰用户
   - 涉及文件:
     - `03-scripts/python_detector.py`
+    - `install.sh` - Unix/Linux/macOS 安装脚本
+    - `install.bat` - Windows 安装脚本
   - 改进功能:
     - ✅ 支持从 Windows Registry 查找已安装的 Python
     - ✅ 支持 Python Launcher (py.exe) 配置
     - ✅ 增强版本检测鲁棒性（多种编码、正则提取）
     - ✅ 扩展路径搜索范围（更多常见安装位置）
+    - ✅ 安装脚本支持详细诊断输出（verbose 模式）
+    - ✅ 安装脚本支持手动指定 Python 路径
+    - ✅ 安装脚本支持手动指定 site-packages 目录
     - ✅ 提供详细调试输出（--verbose 参数）
     - ✅ 更好的错误处理和诊断信息
 

@@ -146,6 +146,7 @@ def clear_config() -> bool:
 # CLI 接口
 if __name__ == "__main__":
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser(description="RF Testing Plugin Config Manager")
     parser.add_argument("--get-python", action="store_true", help="获取保存的 Python 路径")
@@ -171,7 +172,6 @@ if __name__ == "__main__":
             sys.exit(1)
 
     elif args.get_info:
-        import sys
         info = get_python_info()
         if info:
             print(json.dumps(info, indent=2, ensure_ascii=False))

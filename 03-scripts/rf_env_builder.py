@@ -66,10 +66,24 @@ class RFEnvBuilder:
                 text=True,
                 timeout=10,
                 encoding="utf-8",
-                errors="ignore"
+                errors="replace"
             )
             if result.returncode == 0 and result.stdout:
                 site_packages = result.stdout.strip()
+                if site_packages and os.path.exists(site_packages):
+                    return Path(site_packages)
+        except Exception:
+            pass
+
+        # 方法3: 尝试 gbk 编码（Windows 中文环境）
+        try:
+            result = subprocess.run(
+                [self.python_path, "-c", "import site; print(site.getsitepackages()[0])"],
+                capture_output=True,
+                timeout=10
+            )
+            if result.returncode == 0 and result.stdout:
+                site_packages = result.stdout.decode("gbk", errors="replace").strip()
                 if site_packages and os.path.exists(site_packages):
                     return Path(site_packages)
         except Exception:

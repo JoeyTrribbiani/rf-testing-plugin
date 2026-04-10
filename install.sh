@@ -40,18 +40,60 @@ check_command() {
 check_python_environment() {
     log_info "检测 Python 环境..."
 
-    # 使用 Python 检测模块
+    # 使用 Python 检测模块（新增 verbose 参数支持）
+    local verbose_output
+    verbose_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --format text 2>&1)
+
+    # 显示详细检测过程
+    echo "$verbose_output"
+
+    # 获取 JSON 格式的检测结果
     local detection_output
     detection_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --format json 2>/dev/null)
 
     if [ $? -ne 0 ]; then
-        log_error "Python 环境检测失败"
+        log_warn "Python 环境自动检测失败"
+        echo ""
+        echo "[诊断信息]"
+        echo "尝试手动检测 Python 环境..."
+        python3 --version 2>/dev/null || log_warn "系统 python3 未安装"
+        python --version 2>/dev/null || log_warn "系统 python 未安装"
+        echo ""
+
+        # 询问是否手动指定 Python 路径
+        read -p "是否手动指定 Python 可执行文件路径？(y/n): " MANUAL_SPECIFY
+        if [[ $MANUAL_SPECIFY =~ ^[Yy]$ ]]; then
+            read -p "请输入 Python 可执行文件路径: " MANUAL_PYTHON
+            if [ -f "$MANUAL_PYTHON" ]; then
+                PYTHON_CMD="$MANUAL_PYTHON"
+                # 尝试获取版本
+                SELECTED_PYTHON_VERSION=$("$MANUAL_PYTHON" --version 2>&1 | grep -oP 'Python \K[0-9.]+')
+                log_info "使用手动指定的 Python: $PYTHON_CMD"
+                log_info "版本: ${SELECTED_PYTHON_VERSION:-未知}"
+
+                # 设置 pip 命令
+                local python_dir=$(dirname "$MANUAL_PYTHON")
+                if [ -f "$python_dir/pip" ]; then
+                    PIP_CMD="$python_dir/pip"
+                elif [ -f "$python_dir/Scripts/pip.exe" ]; then
+                    PIP_CMD="$python_dir/Scripts/pip.exe"
+                else
+                    PIP_CMD="pip"
+                fi
+                return 0
+            else
+                log_error "指定的 Python 文件不存在: $MANUAL_PYTHON"
+                return 1
+            fi
+        fi
+
         return 1
     fi
 
     # 显示检测结果
     echo ""
-    python3 "$PLUGIN_DIR/03-scripts/python_detector.py"
+    log_info "检测到的 Python 环境:"
+    echo "$detection_output" | python3 -m json.tool 2>/dev/null || echo "$detection_output"
     echo ""
 
     # 获取用户选择
@@ -79,6 +121,13 @@ else:
 
     log_info "已选择: Python $SELECTED_PYTHON_VERSION"
     log_info "路径: $SELECTED_PYTHON_PATH"
+
+    # 验证 Python 是否可用
+    if ! "$SELECTED_PYTHON_PATH" --version &> /dev/null; then
+        log_error "选定的 Python 不可执行"
+        return 1
+    fi
+
     echo ""
 
     # 设置 Python 和 pip 命令
@@ -92,6 +141,15 @@ else:
     else
         PIP_CMD="pip"
     fi
+
+    # 保存完整的 Python 环境信息
+    log_info "保存 Python 环境配置..."
+    python3 -c "
+import sys
+sys.path.insert(0, '$PLUGIN_DIR/03-scripts')
+from rf_config import set_python_info
+set_python_info('$PYTHON_CMD', '$SELECTED_PYTHON_VERSION', '$PIP_CMD', 'conda')
+" 2>/dev/null || log_warn "保存 Python 配置失败"
 }
 
 # 安装 Python 依赖（更新）
@@ -150,26 +208,76 @@ install_jltestlibrary() {
 
     if [ ! -f "$jl_library" ]; then
         log_warn "JLTestLibrary.zip 不存在，跳过安装"
+        log_info "手动安装命令："
+        log_info "  unzip $jl_library -d \$HOME/Library/Python/3.7/site-packages/"
         return
     fi
 
     # 检测 site-packages 目录
     log_info "检测 site-packages 目录..."
 
-    # 获取 site-packages 列表
+    # 获取 site-packages 列表（使用 verbose 模式）
     local sp_output
-    sp_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --format json --python-path "$PYTHON_CMD" 2>/dev/null)
+    sp_output=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --format text --python-path "$PYTHON_CMD" 2>&1)
 
     if [ $? -ne 0 ]; then
-        log_warn "无法自动检测 site-packages 目录，请手动安装"
-        log_info "手动安装命令："
-        log_info "  unzip $jl_library -d \$HOME/Library/Python/3.7/site-packages/"
-        return
-    fi
+        log_warn "无法自动检测 site-packages 目录"
+        log_warn "尝试手动检测..."
 
-    # 检查 JLTestLibrary 是否已安装
-    local jl_installed
-    jl_installed=$(echo "$sp_output" | python3 -c "
+        # 尝试手动计算 site-packages 路径
+        local python_dir=$(dirname "$PYTHON_CMD")
+        local sp_dirs=()
+
+        # 检测常见 site-packages 位置
+        if [[ "$python_dir" == *"conda"* ]] || [[ "$python_dir" == *"envs"* ]]; then
+            # conda 环境
+            if [[ "$python_dir" == *"Scripts"* ]] || [[ "$python_dir" == *"bin"* ]]; then
+                local env_root=$(dirname "$python_dir")
+                if [[ -d "$env_root/lib" ]]; then
+                    sp_dirs+=("$env_root/lib/python*/site-packages")
+                fi
+            fi
+        else
+            # 系统 Python 或 venv
+            local base_dir=$(dirname "$python_dir")
+            if [[ -d "$base_dir/lib" ]]; then
+                sp_dirs+=("$base_dir/lib/python*/site-packages")
+            fi
+        fi
+
+        if [ ${#sp_dirs[@]} -eq 0 ]; then
+            log_error "无法确定 site-packages 目录"
+            log_info "请手动执行以下命令安装："
+            log_info "  $PYTHON_CMD -m site --user-site"
+            log_info "  unzip $jl_library -d \$HOME/.local/lib/python*/site-packages/"
+            return
+        fi
+
+        echo ""
+        log_info "检测到可能的 site-packages 目录："
+        for i in "${!sp_dirs[@]}"; do
+            echo "  $i"
+        done
+        echo ""
+
+        read -p "请选择目标目录 [默认=1]: " sp_choice
+        sp_choice=${sp_choice:-1}
+
+        if [ $sp_choice -le ${#sp_dirs[@]} ] && [ $sp_choice -ge 1 ]; then
+            target_dir="${sp_dirs[$((sp_choice-1))]}"
+        else
+            log_warn "无效的选择，跳过安装"
+            return
+        fi
+    else
+        # 显示详细检测过程
+        echo ""
+        echo "$sp_output"
+        echo ""
+
+        # 检查 JLTestLibrary 是否已安装
+        local jl_installed
+        jl_installed=$(python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --format json --python-path "$PYTHON_CMD" 2>/dev/null | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 if data.get('jl_installed') and True in data['jl_installed']:
@@ -178,23 +286,17 @@ else:
     print('false')
 ")
 
-    if [ "$jl_installed" = "true" ]; then
-        log_info "JLTestLibrary 已安装，跳过安装"
-        return
-    fi
+        if [ "$jl_installed" = "true" ]; then
+            log_info "JLTestLibrary 已安装，跳过安装"
+            return
+        fi
 
-    # 显示 site-packages 选项
-    echo ""
-    python3 "$PLUGIN_DIR/03-scripts/python_detector.py" --site-packages --python-path "$PYTHON_CMD"
-    echo ""
+        # 显示 site-packages 选项
+        read -p "请选择目标目录 [默认=1]: " sp_choice
+        sp_choice=${sp_choice:-1}
 
-    # 获取用户选择
-    read -p "请选择目标目录 [默认=1]: " sp_choice
-    sp_choice=${sp_choice:-1}
-
-    # 解析选择的路径
-    local target_dir
-    target_dir=$(echo "$sp_output" | python3 -c "
+        # 解析选择的路径
+        target_dir=$(echo "$sp_output" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
 paths = data.get('site_packages', [])
@@ -202,13 +304,19 @@ if len(paths) >= $sp_choice:
     print(paths[$sp_choice - 1])
 ")
 
-    if [ -z "$target_dir" ]; then
-        log_warn "无效的选择，跳过安装"
-        return
+        if [ -z "$target_dir" ]; then
+            log_warn "无效的选择，跳过安装"
+            return
+        fi
     fi
 
     # 安装
     log_info "解压 JLTestLibrary 到: $target_dir"
+    if [ ! -d "$target_dir" ]; then
+        log_error "目标目录不存在: $target_dir"
+        return
+    fi
+
     unzip -q "$jl_library" -d "$target_dir" || {
         log_error "解压失败，请检查权限"
         return
@@ -217,6 +325,8 @@ if len(paths) >= $sp_choice:
     # 验证
     "$PYTHON_CMD" -c "import JLTestLibrary" 2>/dev/null || {
         log_error "JLTestLibrary 安装验证失败"
+        log_info "手动验证命令："
+        log_info "  $PYTHON_CMD -c 'import JLTestLibrary'"
         return
     }
 

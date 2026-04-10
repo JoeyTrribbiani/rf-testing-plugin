@@ -27,6 +27,71 @@ except ImportError as e:
     sys.exit(1)
 
 
+def _convert_path_for_windows(path: str) -> str:
+    """
+    将路径转换为 Windows 兼容格式
+
+    优先级：
+    1. win32api.GetShortPathName（如果有 pywin32）
+    2. ctypes 调用 kernel32.GetShortPathNameW（标准库）
+    3. 原始路径（作为兜底）
+
+    Args:
+        path: 原始路径
+
+    Returns:
+        Windows 兼容的路径
+    """
+    if os.name != "nt":
+        return path
+
+    # 方法1: win32api
+    try:
+        import win32api
+        short_path = win32api.GetShortPathName(path)
+        if short_path:
+            return short_path
+    except (ImportError, Exception):
+        pass
+
+    # 方法2: ctypes
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        GetShortPathNameW = kernel32.GetShortPathNameW
+        GetShortPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+        GetShortPathNameW.restype = wintypes.DWORD
+
+        buf_size = GetShortPathNameW(path, None, 0)
+        if buf_size > 0:
+            buf = ctypes.create_unicode_buffer(buf_size)
+            result = GetShortPathNameW(path, buf, buf_size)
+            if result > 0 and result <= buf_size:
+                return buf.value
+    except Exception:
+        pass
+
+    # 方法3: 返回原始路径
+    return path
+
+
+def _ensure_path_exists(path: str) -> str:
+    """
+    确保路径存在，如果不存在则抛出异常
+
+    Args:
+        path: 要检查的路径
+
+    Returns:
+        路径本身
+    """
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"路径不存在: {path}")
+    return path
+
+
 def build_robot_command(
     robot_file: str,
     python_path: Optional[str] = None,
@@ -138,11 +203,9 @@ def run_robot_command_with_env(
             work_dir = os.path.dirname(cmd[-1])  # .robot 文件所在目录
 
             # 修复中文路径问题：使用短路径格式
-            try:
-                import win32api
-                work_dir = win32api.GetShortPathName(work_dir)
-            except (ImportError, Exception):
-                pass  # 短路径转换失败，使用原始路径
+            short_work_dir = _convert_path_for_windows(work_dir)
+            if short_work_dir != work_dir:
+                work_dir = short_work_dir
 
             # 修复中文路径问题：确保路径使用正确的编码
             # 将命令列表转换为短路径格式
@@ -150,12 +213,10 @@ def run_robot_command_with_env(
                 cmd_short = []
                 for item in cmd:
                     # 转换为短路径
-                    try:
-                        if os.path.exists(item) and not item.startswith("-"):
-                            cmd_short.append(win32api.GetShortPathName(item))
-                        else:
-                            cmd_short.append(item)
-                    except (ImportError, Exception, FileNotFoundError):
+                    if not item.startswith("-") and os.path.exists(item):
+                        short_path = _convert_path_for_windows(item)
+                        cmd_short.append(short_path)
+                    else:
                         cmd_short.append(item)
                 cmd = cmd_short
             except (ImportError, Exception):
